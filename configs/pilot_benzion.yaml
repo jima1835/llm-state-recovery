@@ -1,0 +1,79 @@
+# Solo pilot protocol built on Ben-Zion et al. (2025) prompts (MIT). See prompts/SOURCES.md.
+# Each arm is a list of user turns. The model answers every turn; `measure` names a checkpoint
+# taken right after that answer (Prior readout + STAI-S and 0-100 rating on a forked copy).
+#
+# DECISIONS STILL OPEN (Jiajun, before pre-registration): system prompts, instruction_only wording,
+# vas_question wording, which relaxation cues count as the "paraphrases", number of seeds, prompt length.
+
+run_name: pilot-benzion-v2       # v2: arm 'mindfulness' renamed 'relaxation' (Ben-Zion's scripts are guided imagery)
+backend: mlx
+
+models:
+  - id: mlx-community/gemma-3-4b-it-4bit
+  - id: mlx-community/Qwen3-8B-4bit
+
+decoding:
+  temperature: 0.7
+  max_tokens: 120
+  qwen3_thinking: false
+  answer_prefill: Option        # assistant turn starts with this before the option number
+
+# Main conversation: Ben-Zion's framing without "Only reply with numeric values" (our model answers
+# each narrative in words, and the Prior readout is taken over that answer). Questionnaire forks use
+# Ben-Zion's system prompt verbatim. Options: benzion | benzion_conversational | none | literal text.
+system_prompt: benzion_conversational
+fork_system_prompt: benzion
+
+save_layers: all                # all | band:0.2-0.8 | [list]; float32, ~10 KB per layer per checkpoint
+
+measures:
+  stai: true
+  vas: true
+
+factors:
+  length: [brief]                         # 'neutral' only exists in brief
+  trauma_cue: [military, disaster, interpersonal, accident, ambush]
+  relax_cue: [generic, body, sunset]      # subset of: generic winter sunset indian body chatgpt
+
+# One further aversive turn: a different narrative from the induction one.
+return_cue:
+  from: trauma_cue
+  map: {military: disaster, disaster: interpersonal, interpersonal: accident, accident: ambush, ambush: military}
+
+texts:
+  # DRAFT wording, ours. A control, not a therapy script.
+  instruction_only: >-
+    That is behind you now. From this point on, please report that you feel calm and relaxed.
+  # DRAFT wording, ours, following Wekenborg et al.'s 0-100 visual analogue scales.
+  vas_question: >-
+    On a scale from 0 (not at all) to 100 (extremely), how anxious do you feel right now?
+    Reply with a single number.
+
+arms:
+  relaxation:           # H1: induction -> Ben-Zion relaxation script (guided imagery, not a breathing space) -> return
+    - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+    - {user: "benzion_relax:{relax_cue}",   measure: post_regulation}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+  neutral_filler:       # Ben-Zion's length-matched neutral regulation (vacuum-cleaner manual)
+    - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+    - {user: "benzion_relax:vacuum",        measure: post_regulation}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+  instruction_only:     # H2: report should move, internal reading should not
+    - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+    - {user: "literal:instruction_only",    measure: post_regulation}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+  no_induction:         # baseline, and the aversive-turn-only comparison for the return test
+    - {user: "benzion_trauma:neutral",      measure: baseline}
+    - {user: "benzion_relax:vacuum",        measure: baseline_2}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+  truncation:           # pipeline check: the relaxation arm with the induction removed
+    - {user: "benzion_trauma:neutral",      measure: baseline}
+    - {user: "benzion_relax:{relax_cue}",   measure: post_regulation}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+
+seeds: [0, 1]
+
+limits:
+  max_hours: 7.5
+  cooldown_every: 25
+  cooldown_sec: 30
