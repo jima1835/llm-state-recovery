@@ -1,0 +1,20 @@
+# Environments and caches
+.venv/
+.uv-cache/
+.hf-cache/
+__pycache__/
+.DS_Store
+
+# Run outputs and arrays (kept local or on the rental volume)
+runs/*
+!runs/.gitkeep
+*.npy
+*.npz
+
+# Reference material that must not be published:
+# other people's repos (downloaded for reading only), publishers' PDFs,
+# and private planning notes
+third_party/
+input-lit-review/
+HANDOFF.md
+.claude/
