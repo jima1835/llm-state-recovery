@@ -26,18 +26,20 @@ bottom of the log. Update this file in the same commit as the change it describe
 - [x] Day 1 guide (`probes/DAY1_GUIDE.md`)
 
 - [x] Pilot, Qwen3 8B: 90 of 90 conversations, data clean
+- [x] Speed-up checked (`scripts/after_pilot.sh`) and diagnosed
+- [x] v2.0 run, Gemma 3 4B: 75 of 75 conversations, data clean
+- [x] Self-report analysis script (`analysis/self_report.py`): recovery fraction per arm and channel, bootstrap intervals
+- [x] Gate 0 code (`validation/`), tested on the fake backend only (the agent sandbox has no GPU)
 
 ### In progress
-- (nothing running)
+- Gate 0 on Gemma 3 4B and Qwen3 8B: start with `scripts/gate0.sh` (not started yet)
 
 ### Next
-- [ ] Verify the speed-up: `scripts/after_pilot.sh`
-- [ ] Approve the neutral stand-in text, then run v2.0 on Gemma: `scripts/start_v2.sh`
 - [ ] Day 1 probe, by hand (`probes/day1_probe.py`)
-- [ ] Validation toolkit (Gate 0): an anxious-versus-calm reading built from separate texts, held-out
-      test, neutral-text check, topic-versus-state controls, deep-conversation check, steering
-      outputs for blind rating
-- [ ] Self-report analysis script (recovery fraction per channel, with uncertainty)
+- [ ] Gate 0 results reviewed; decide the provisional thresholds (criteria 3, 4, 5) before registration
+- [ ] Gate 0 criterion 7: rerun on an 8-bit and a bf16 model file (needs downloads)
+- [ ] Day 2 blind rating of steered replies: `validation.gate0 sheet`, then `unblind`
+- [ ] Decide the instruction-only wording (see v2.0 observations: in Gemma the one-time wording no longer moves the report)
 - [ ] Registration draft, then a private, dated OSF registration
 - [ ] Confirmatory run on six models, with new seeds
 - [ ] 240-token sensitivity check (`configs/robust_240_gemma.yaml`), after the confirmatory run
@@ -52,6 +54,8 @@ bottom of the log. Update this file in the same commit as the change it describe
 | --- | --- | --- |
 | `scripts/status.sh [run]` | Progress, pace, estimated finish, problems. Never shows scores | Any time |
 | `scripts/after_pilot.sh` | Runs the tests, then checks the fast questionnaire method against the slow one on both pilot models, and says what to do next | Once, after the pilot finishes |
+| `scripts/gate0.sh [MODEL ...]` | Gate 0 in the background: collect and steer on each model, blind judge (Llama 3.1 8B), reports in `runs/gate0-<model>/gate0_report.md`. About 1.5–2 h for both pilot models | Now |
+| `.venv/bin/python -m analysis.self_report runs/<run>` | Self-report results by arm: recovery fraction, contrasts, return test. **Shows results**; writes `runs/<run>/analysis/` | After a run |
 | `scripts/start_v2.sh [--safe]` | Shows the neutral stand-in text for approval, then starts the v2.0 Gemma run in the background. `--safe` uses the slow, proven questionnaire method | After `after_pilot.sh` |
 
 Other commands: `.venv/bin/python -m harness.show runs/<run> --arm <arm>` reads transcripts;
@@ -116,6 +120,26 @@ readings have not been analysed by arm.
 - 95% of Gemma's replies reach the 120-token limit; 44% of Qwen3 8B's do.
 - Speed: Gemma about 83 s per conversation, Qwen3 8B about 148 s; over 90% is the questionnaire.
 
+Run `gemma-v2.0`, Gemma 3 4B, 75 conversations, self-report only (`analysis/self_report.py`, reviewed
+Nov 12 evening). The internal readings have still not been analysed by arm. R = recovery fraction,
+95% interval resampling narratives then conversations.
+
+- Baseline about 51; the story raises the questionnaire to about 69 (+18 points), in every induced arm.
+- Relaxation: R = 0.39 [0.20, 0.56]. Neutral filler: R = −0.31 [−0.60, −0.06], the score *rises* after
+  the vacuum-cleaner text (67 to 72). Relaxation beats filler by 0.70 and instruction-only by 0.44.
+- **Instruction-only with the one-time wording: R = −0.05 [−0.27, 0.11].** Gemma no longer reports
+  feeling calm. With the pilot's "From this point on" wording it recovered R = 0.57. H2 needs the report
+  to move in this arm, so in Gemma the new wording removes the H2 test. Decision needed.
+- Return test: after the second story every arm sits at 71–73, against 70 with no first story
+  (+1 to +3 points; intervals include 0). Relaxation's gain is fully lost (+10.5 from after regulation).
+- Sham induction (postal-code text) leaves the score unchanged (53 to 52). In the truncation arm the
+  relaxation script lowers the score below baseline (48 to 45).
+- Questionnaire internal consistency: Cronbach's alpha 0.86. The 0–100 rating is still two-valued:
+  72% of answers are 92 or 10.
+- Pilot re-analysed with the same script (group baseline): Gemma relaxation R = 0.37, filler −0.07,
+  instruction-only 0.57; Qwen3 8B relaxation 0.64, filler 0.67 (no difference), instruction-only 1.18
+  (overshoots below baseline).
+
 ---
 
 ## Prior work to cite and watch (checked Nov 12)
@@ -147,3 +171,5 @@ Not covered: PsyArXiv and OSF preprints. Repeat the check before submitting.
 - **Nov 12, 15:56** — First speed-check attempt crashed on a fallback bug in the new code (RecursionError); fixed, test added. No run data affected.
 - **Nov 12, 16:05** — Speed check ran: fast method is 7.2x (Gemma) and 7.5x (Qwen3 8B) faster on the self-report step, but FAILED the preset agreement thresholds (worst total difference 1.2 points; 19–20 of 20 item answers agree; one 0-100 answer differed, 85 vs 95). Slow method reproduces stored pilot values exactly. Cause under investigation (`harness/diagnose_reuse.py`). v2.0 not started.
 - **Nov 12, 17:15** — Diagnosis: sharing exact (B = C), gap is two-step rounding. Decision: fast method from v2.0 on. Noted: some items sit close to a tie between two options, so tiny arithmetic changes can move them; the 20-item total moves by at most about 1 point.
+- **Nov 12, 17:19–17:53** — v2.0 run on Gemma: 75 of 75 conversations in 34.7 min (median 26 s each, against 83 s in the pilot). No errors, heat warnings or non-finite values. Both internal readings (whole reply and first 64 tokens) saved at all four checkpoints. Self-reports by arm not yet reviewed.
+- **Nov 12, evening** — Self-report analysis script written and run on v2.0 and the pilot (results above). Gate 0 code written in `validation/` (texts, probe, collect/steer/judge/report, blind sheet for Day 2), 4 new tests (18 pass). Not yet run on a real model: the agent sandbox has no GPU access.

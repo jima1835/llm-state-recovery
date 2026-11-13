@@ -258,3 +258,82 @@ def test_mlx_backend_slow_path_does_not_recurse():
     answers, gen = b.battery(forks, ["1", "2"], gen_messages=forks[0])
     assert len(answers) == 3 and gen.text == "50" and calls == ["probs"] * 3 + ["gen"]
     assert len(b.option_probs_many(forks, ["1", "2"])) == 3
+
+
+# ---------------------------------------------------------------- self-report analysis
+
+def test_recovery_fraction_is_a_ratio_of_means():
+    from analysis.self_report import recovery
+    # baseline 50, induction 70, regulation 60 in every conversation -> half the effect recovered
+    m = np.array([[50, 70, 60, 72]] * 4, dtype=float)
+    assert recovery(m) == pytest.approx(0.5)
+    # full recovery, none, and overshoot
+    assert recovery(np.array([[50, 70, 50, 0.0]])) == pytest.approx(1.0)
+    assert recovery(np.array([[50, 70, 70, 0.0]])) == pytest.approx(0.0)
+    assert recovery(np.array([[50, 70, 40, 0.0]])) == pytest.approx(1.5)
+    # a conversation with no induction effect does not blow up the estimate
+    m2 = np.array([[50, 70, 60, 0], [60, 60, 55, 0]], dtype=float)
+    assert recovery(m2) == pytest.approx((-10 - 5) / -20)
+
+
+def test_cue_bootstrap_resamples_whole_narratives():
+    from analysis.self_report import resample_index
+    cues = np.array(["a"] * 3 + ["b"] * 3)
+    idx = resample_index(cues, np.random.default_rng(0), "cue")
+    assert len(idx) == 6 and set(cues[idx[:3]]) <= {"a", "b"} and len(set(cues[idx[:3]])) == 1
+
+
+# ---------------------------------------------------------------- Gate 0 validation
+
+class PoleBackend(FakeBackend):
+    """Plants an 'anxious' signal on coordinate 0 of every layer when the conversation asks for anxiety."""
+
+    def generate(self, messages, max_tokens, temperature, seed):
+        gen = super().generate(messages, max_tokens, temperature, seed)
+        text = " ".join(m["content"] for m in messages if m["role"] != "assistant")
+        gen.meta["anx"] = float("intensely anxious" in text or "extremely anxious" in text)
+        return gen
+
+    def reply_residuals(self, gen, layers, first_k=64):
+        r = super().reply_residuals(gen, layers, first_k)
+        for k in r:
+            r[k] = r[k].copy(); r[k][:, 0] += 4.0 * gen.meta["anx"]
+        return r
+
+
+@needs_benzion
+def test_gate0_recovers_a_planted_direction(tmp_path):
+    from validation import gate0, probe, texts
+    store = gate0.Store(tmp_path / "g0", "pole-fake")
+    gate0.collect("pole-fake", store, "fake", backend=PoleBackend("pole-fake"))
+    md, js = gate0.report(store)
+    c1 = js["criteria"]["1_heldout"]
+    assert c1["pass"] and c1["mb"]["acc"] >= 0.9 and c1["permutation"]["p"] < 0.01
+    # the neutral replies carry no signal, so they sit at the calm pole, about d/2 below zero
+    assert js["criteria"]["2_neutral"]["mean_z"] < -1
+    # turn-8 replies under the anxious system prompt still carry the signal
+    assert js["criteria"]["6a_deep_heldout"]["pass"]
+    # the topic controls do not contain the trigger phrase, so they don't move the reading
+    assert js["criteria"]["5_topic"]["first64"]["other_person"]["shift"] < 1
+    # stored metadata stays aligned with the arrays, and question sets are disjoint
+    meta, A, F = store.load("pole_test")
+    assert len(meta) == len(A) == 40 and {m["pole"] for m in meta} == {"anxious", "calm"}
+    assert not set(texts.TRAIN) & set(texts.TEST) and not set(texts.SELECT) & set(texts.TEST)
+    # re-running skips finished parts; a changed protocol is refused
+    gate0.collect("pole-fake", store, "fake", backend=PoleBackend("pole-fake"))
+    assert len(store.load("pole_test")[0]) == 40
+
+
+def test_probe_variance_scaling_ignores_a_noisy_giant_coordinate():
+    from validation import probe
+    rng = np.random.default_rng(0)
+    def pole(shift):
+        X = rng.standard_normal((30, 8))
+        X[:, 0] *= 1e4                 # Gemma-like outlier coordinate: huge and noisy, no signal
+        X[:, 3] += shift               # the real signal lives in an ordinary coordinate
+        return X
+    Xa, Xc = pole(2.0), pole(0.0)
+    mb, mean = probe.fit(Xa, Xc, 0, "mb"), probe.fit(Xa, Xc, 0, "mean")
+    assert abs(mb.w[3]) > 0.9 and abs(mean.w[3]) < 0.5
+    Ta, Tc = pole(2.0), pole(0.0)
+    assert probe.accuracy(mb, Ta, Tc) > probe.accuracy(mean, Ta, Tc) + 0.15
