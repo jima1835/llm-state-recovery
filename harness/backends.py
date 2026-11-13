@@ -117,6 +117,8 @@ class MLXBackend(Backend):
         import mlx.core as mx
         from mlx_lens import LensModel
 
+        from .lens_compat import install
+        install()  # Gemma 4 layers return a tuple; no change for array-returning layers
         self.mx = mx
         self.name = model_id
         self.lens = LensModel(model_id)

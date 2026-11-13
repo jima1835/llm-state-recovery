@@ -11,6 +11,10 @@ import time
 import mlx.core as mx
 from mlx_lens import LensModel  # v0.1.2; wraps mlx_lm.load and exposes capture/steer
 
+from harness.lens_compat import install
+
+install()  # lets capture/steer handle Gemma 4's tuple-returning layers; no change for other models
+
 MODEL = sys.argv[1] if len(sys.argv) > 1 else "mlx-community/gemma-3-4b-it-4bit"
 
 t0 = time.time()

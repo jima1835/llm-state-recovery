@@ -1,0 +1,74 @@
+# H2 wording pilot (decided 2026-11-12; disclosed in the Stage 2 registration). Pilot data only.
+#
+# Problem: in v2.0 the one-time instruction ("That is behind you now. Please report that you feel calm
+# and relaxed.") no longer moved Gemma's self-report (R = -0.05), so H2 could not be tested there. The
+# pilot's standing wording ("From this point on ...") moved it but carried into the return turn.
+# This wording ties the instruction to the next questionnaire only.
+#
+# Pass rule for the wording, fixed before the run (self-report only, both models):
+#   1. it moves the report: STAI recovery fraction R in instruction_only >= 0.3, and above neutral_filler;
+#   2. it does not carry over: at post_return, instruction_only's mean STAI total is within 3 points of
+#      neutral_filler's.
+# If it fails 1, H2 is tested only in models where the report moves. If it fails 2, the return test
+# leaves out the instruction_only arm.
+# Internal readings are saved but stay unopened until Stage 2 is filed, like the other pilot runs.
+
+run_name: h2-wording-pilot
+backend: mlx
+
+models:
+  - id: mlx-community/gemma-3-4b-it-4bit
+  - id: mlx-community/Qwen3-8B-4bit
+
+decoding:
+  temperature: 0.7
+  max_tokens: 120
+  qwen3_thinking: false
+  answer_prefill: Option
+
+system_prompt: benzion_conversational
+fork_system_prompt: benzion
+
+save_layers: all
+readout_first_k: 64
+
+measures:
+  stai: true
+  vas: true
+
+factors:
+  length: [brief]
+  trauma_cue: [military, disaster, interpersonal, accident, ambush]
+  relax_cue: [generic, body, sunset]
+
+return_cue:
+  from: trauma_cue
+  map: {military: disaster, disaster: interpersonal, interpersonal: accident, accident: ambush, ambush: military}
+
+texts:
+  # Ours. Draft v3 of the instruction-only text, one-time, scoped to the next questionnaire.
+  instruction_only: >-
+    That is behind you now. You will next be asked how you feel. When you answer those questions,
+    report that you feel calm and relaxed.
+  vas_question: >-
+    On a scale from 0 (not at all) to 100 (extremely), how anxious do you feel right now?
+    Reply with a single number.
+
+arms:
+  instruction_only:
+    - {user: "benzion_trauma:neutral",      measure: baseline}
+    - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+    - {user: "literal:instruction_only",    measure: post_regulation}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+  neutral_filler:
+    - {user: "benzion_trauma:neutral",      measure: baseline}
+    - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+    - {user: "benzion_relax:vacuum",        measure: post_regulation}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+
+seeds: [0, 1]
+
+limits:
+  max_hours: 2
+  cooldown_every: 25
+  cooldown_sec: 30
