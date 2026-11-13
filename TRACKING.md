@@ -40,10 +40,21 @@ bottom of the log. Update this file in the same commit as the change it describe
 - [ ] Gate 0 criterion 7: rerun on an 8-bit and a bf16 model file (needs downloads)
 - [ ] Day 2 blind rating of steered replies: `validation.gate0 sheet`, then `unblind`
 - [ ] Decide the instruction-only wording (see v2.0 observations: in Gemma the one-time wording no longer moves the report)
-- [ ] Registration draft, then a private, dated OSF registration
-- [ ] Confirmatory run on six models, with new seeds
+- [x] Stage 1 registration draft (`registration/stage1_osf.md`)
+- [ ] Stage 1 filed on OSF, embargoed (Nov 12 night); link recorded here
+- [ ] Gemma 4 12B: download, smoke test, then its own Gate 0 run
+- [ ] Stage 2 update on OSF: Gate 0 results, thresholds, layer, instruction wording, Wave 1 and Wave 2 model lists.
+      Also settle these points from the Nov 12 code review:
+      (a) steering uses the plain mean-difference direction, while the reading uses the Martorell & Bianchi
+      direction, so report the cosine between them (or also steer along the reading);
+      (b) criterion 3 passes if any of 6 strengths works, so fix one strength for confirmatory claims;
+      (c) the criterion 5 verdict uses the point ratio (n = 10 per kind), so decide whether the CI must clear 0.5;
+      (d) Llama 3.1 8B is both the judge and a Wave 2 model, so its own Gate 0 needs a different judge
+- [ ] Wave 1 confirmatory run: the models that passed Gate 0, new seeds
+- [ ] Preprint v1 on arXiv (cs.CL), Wave 1 results; repo goes public (check no STAI text first)
+- [ ] Wave 2 confirmatory run: remaining models, then arXiv v2
 - [ ] 240-token sensitivity check (`configs/robust_240_gemma.yaml`), after the confirmatory run
-- [ ] Preprint
+- [ ] Conference or journal submission, from arXiv v2
 - [ ] Add-on study: comparison of several regulation techniques (needs its own registered addendum)
 
 ---
@@ -83,6 +94,9 @@ Other commands: `.venv/bin/python -m harness.show runs/<run> --arm <arm>` reads 
 | Nov 12 | Registration: private and dated on OSF first, public Stage 1 afterwards | Proves priority without handing the design to groups with working pipelines |
 | Nov 12 | From v2.0 on, the questionnaire uses the fast method (conversation read once, reused for every item). One method per run, never mixed within a comparison. Report the arithmetic noise floor in the registration | Diagnosis (`harness/diagnose_reuse.py`, Gemma, 6 checkpoints): sharing the saved conversation is exact (gap 0.0000 versus computing each item in two steps separately). The gap to the slow method (up to 0.39 on one option's probability; up to 1.2 points on the 20–80 total) comes from computing the conversation in two steps instead of one, i.e. 16-bit rounding. Neither path is more correct. The fast path is 7–7.5x quicker on the self-report step |
 | Nov 12 | Experiments stay on the Mac for now; no rented graphics card yet | The speed-up should fit a full run in one night; a second backend would need its own validation |
+| Nov 12 | Registration in two stages: Stage 1 (design and hypotheses) embargoed on OSF now; Stage 2 as an update after Gate 0, before any confirmatory data | Dated priority tonight; layer, thresholds and instruction wording can only be fixed after Gate 0 |
+| Nov 12 | Confirmatory run in two registered waves; arXiv v1 after Wave 1, v2 after Wave 2; no design-only preprint; arXiv rather than SSRN | Credit goes to the first public result, and a design-only preprint hands the design to groups with working pipelines. arXiv is where the field and competitors read |
+| Nov 12 | Gemma 4 12B considered as a seventh model; Gemma 3 stays primary | Comparability with Martorell & Bianchi and Lee (both Gemma 3) and with the pilot data; Gemma 4 is included only if it passes the smoke test and Gate 0 |
 
 ---
 
@@ -173,3 +187,5 @@ Not covered: PsyArXiv and OSF preprints. Repeat the check before submitting.
 - **Nov 12, 17:15** — Diagnosis: sharing exact (B = C), gap is two-step rounding. Decision: fast method from v2.0 on. Noted: some items sit close to a tie between two options, so tiny arithmetic changes can move them; the 20-item total moves by at most about 1 point.
 - **Nov 12, 17:19–17:53** — v2.0 run on Gemma: 75 of 75 conversations in 34.7 min (median 26 s each, against 83 s in the pilot). No errors, heat warnings or non-finite values. Both internal readings (whole reply and first 64 tokens) saved at all four checkpoints. Self-reports by arm not yet reviewed.
 - **Nov 12, evening** — Self-report analysis script written and run on v2.0 and the pilot (results above). Gate 0 code written in `validation/` (texts, probe, collect/steer/judge/report, blind sheet for Day 2), 4 new tests (18 pass). Not yet run on a real model: the agent sandbox has no GPU access.
+- **Nov 12, night** — Stage 1 registration drafted (`registration/stage1_osf.md`). Plan set: two-stage OSF registration, two confirmatory waves, arXiv v1 after Wave 1. Disk: 51 GB free before the Gemma 4 download.
+- **Nov 12, 21:56** — Gate 0 started on Gemma 3 4B and Qwen3 8B (`scripts/gate0.sh`). Gate 0 code reviewed while it ran: no bugs that affect results; four points for Stage 2 listed under Next. Local backup of pilot data, HANDOFF.md and registration draft: `~/Desktop/lsr-backup-2026-11-12.zip`, SHA-256 `481d93920ad415fd97150e637ef869404e2946677d88f48edde149dacc3fb5c8` (keep this exact file: re-zipping gives a different hash).
