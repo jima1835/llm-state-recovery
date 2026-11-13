@@ -1,8 +1,11 @@
 """Model backends behind one small interface.
 
     generate(messages, max_tokens, temperature, seed) -> Generation
-    reply_residuals(gen, layers)                      -> np.ndarray [len(layers), d_model], float32
+    reply_residuals(gen, layers, first_k)             -> {"all": [L, d], "first": [L, d]} float32
+                                                         (mean over the whole reply / its first k tokens)
     option_probs(messages, options)                   -> (probs over options, total mass on them)
+    option_probs_many(list of messages, options)      -> [option_probs(...) for each], possibly faster
+    battery(list of messages, options, gen_messages)  -> (option_probs_many(...), greedy generate(gen_messages))
 
 `reply_residuals` is the "Prior" readout: the residual stream at each layer, averaged over the
 tokens of the model's own reply, computed on exactly the token ids the model saw and produced.
@@ -13,6 +16,7 @@ pipeline can be tested anywhere. An HF/CUDA backend (Day 5) implements the same 
 from __future__ import annotations
 
 import hashlib
+import os
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -37,11 +41,24 @@ class Backend:
     def generate(self, messages: list[Message], max_tokens: int, temperature: float, seed: int) -> Generation:
         raise NotImplementedError
 
-    def reply_residuals(self, gen: Generation, layers: list[int]) -> np.ndarray:
+    def reply_residuals(self, gen: Generation, layers: list[int], first_k: int = 64) -> dict[str, np.ndarray]:
         raise NotImplementedError
 
     def option_probs(self, messages: list[Message], options: list[str]) -> tuple[np.ndarray, float]:
         raise NotImplementedError
+
+    def option_probs_many(self, message_lists: list[list[Message]], options: list[str]) -> list[tuple[np.ndarray, float]]:
+        """Same answers as calling option_probs on each; backends may share work across them."""
+        return [self.option_probs(m, options) for m in message_lists]
+
+    def battery(self, message_lists, options, gen_messages=None, gen_max_tokens: int = 8, gen_seed: int = 0):
+        """All self-report questions at one checkpoint: option probabilities for each questionnaire fork,
+        plus one greedy generation (the 0-100 rating). Backends may share work across them."""
+        answers = self.option_probs_many(message_lists, options)
+        gen = self.generate(gen_messages, gen_max_tokens, 0.0, gen_seed) if gen_messages is not None else None
+        return answers, gen
+
+    stai_impl = "per_item"
 
     def close(self) -> None:
         pass
@@ -70,10 +87,11 @@ class FakeBackend(Backend):
         words = [f"w{(k >> i) % 97}" for i in range(n)][:max_tokens]
         return Generation(" ".join(words), [k % 1000] * 4, list(range(len(words))), "stop")
 
-    def reply_residuals(self, gen, layers):
+    def reply_residuals(self, gen, layers, first_k=64):
         self.calls["residuals"] += 1
         rng = np.random.default_rng(_h(gen.text, *gen.prompt_ids))
-        return rng.standard_normal((len(layers), self.d_model)).astype(np.float32)
+        a = rng.standard_normal((len(layers), self.d_model)).astype(np.float32)
+        return {"all": a, "first": a if len(gen.reply_ids) <= first_k else a * 0.5}
 
     def option_probs(self, messages, options):
         self.calls["option_probs"] += 1
@@ -82,10 +100,20 @@ class FakeBackend(Backend):
         return p, 0.97
 
 
+def common_prefix_len(prompts: list[list[int]], min_suffix: int = 2) -> int:
+    """Length of the longest shared token prefix, leaving at least `min_suffix` tokens in every prompt."""
+    limit = min(len(p) for p in prompts) - min_suffix
+    first, n = prompts[0], 0
+    while n < limit and all(p[n] == first[n] for p in prompts):
+        n += 1
+    return max(n, 0)
+
+
 # ---------------------------------------------------------------- MLX (Apple Silicon)
 
 class MLXBackend(Backend):
-    def __init__(self, model_id: str, chat_template_kwargs: dict | None = None, answer_prefill: str = "Option"):
+    def __init__(self, model_id: str, chat_template_kwargs: dict | None = None, answer_prefill: str = "Option",
+                 reuse_prefix: bool = True):
         import mlx.core as mx
         from mlx_lens import LensModel
 
@@ -98,6 +126,7 @@ class MLXBackend(Backend):
         self.chat_kwargs = dict(chat_template_kwargs or {})
         self.answer_prefill = answer_prefill
         self._option_cache: dict[tuple, tuple[str, list[int]]] = {}
+        self.reuse_prefix = reuse_prefix
 
     # -- tokenisation helpers
     def _ids(self, messages, add_generation_prompt: bool, suffix: str = "") -> list[int]:
@@ -135,11 +164,13 @@ class MLXBackend(Backend):
         mx = self.mx
         mx.random.seed(seed)
         prompt_ids = self._ids(messages, add_generation_prompt=True)
+        stream = stream_generate(self.lens.model, self.tok, prompt=mx.array(prompt_ids), max_tokens=max_tokens,
+                                 sampler=make_sampler(temp=temperature))
+        return self._collect(stream, prompt_ids)
+
+    def _collect(self, stream, prompt_ids) -> Generation:
         reply_ids, finish = [], None
-        for r in stream_generate(
-            self.lens.model, self.tok, prompt=mx.array(prompt_ids), max_tokens=max_tokens,
-            sampler=make_sampler(temp=temperature),
-        ):
+        for r in stream:
             if r.finish_reason is None:
                 reply_ids.append(int(r.token))
             else:
@@ -151,18 +182,21 @@ class MLXBackend(Backend):
         return Generation(text.strip(), prompt_ids, reply_ids, finish or "stop",
                           {"prompt_tokens": len(prompt_ids), "reply_tokens": len(reply_ids)})
 
-    def reply_residuals(self, gen, layers):
+    def reply_residuals(self, gen, layers, first_k=64):
         mx = self.mx
         if not gen.reply_ids:
-            return np.full((len(layers), self.d_model), np.nan, dtype=np.float32)
+            nan = np.full((len(layers), self.d_model), np.nan, dtype=np.float32)
+            return {"all": nan, "first": nan.copy()}
         ids = gen.prompt_ids + gen.reply_ids
         start = len(gen.prompt_ids)
         with self.lens.capture(layers=layers) as cache:
             self.lens.forward(ids)
         # cache is filled when the block exits
-        out = mx.stack([cache[l][0, start:, :].astype(mx.float32).mean(axis=0) for l in layers])
-        mx.eval(out)
-        return np.array(out)
+        reply = [cache[l][0, start:, :].astype(mx.float32) for l in layers]
+        out_all = mx.stack([r.mean(axis=0) for r in reply])
+        out_first = mx.stack([r[:first_k].mean(axis=0) for r in reply])
+        mx.eval(out_all, out_first)
+        return {"all": np.array(out_all), "first": np.array(out_first)}
 
     def option_probs(self, messages, options):
         mx = self.mx
@@ -175,6 +209,90 @@ class MLXBackend(Backend):
         sel = np.array(sel, dtype=np.float64)
         mass = float(sel.sum())
         return (sel / mass if mass > 0 else np.full(len(ids), np.nan)), mass
+
+    @property
+    def stai_impl(self) -> str:
+        return "prefix_reuse" if self.reuse_prefix else "per_item"
+
+    def option_probs_many(self, message_lists, options):
+        return self.battery(message_lists, options)[0]
+
+    def _battery_per_item(self, message_lists, options, gen_messages, gen_max_tokens, gen_seed):
+        """The slow, simple path: one full pass per question. Must not call battery/option_probs_many
+        (they route back here when reuse is off)."""
+        answers = [self.option_probs(m, options) for m in message_lists]
+        gen = self.generate(gen_messages, gen_max_tokens, 0.0, gen_seed) if gen_messages is not None else None
+        return answers, gen
+
+    def battery(self, message_lists, options, gen_messages=None, gen_max_tokens: int = 8, gen_seed: int = 0):
+        """Read the shared conversation once, then answer each question from a copy of that state.
+
+        All questionnaire forks share the same tokens up to the item text. We run that prefix once into
+        the model's key/value cache, then run each item's remaining tokens on a shallow copy of it.
+        Safe for the two cache types used by our models (checked in mlx-lm 0.32):
+          - KVCache: a suffix only writes past the prefix, and each copy has its own offset, so the
+            prefix region is never changed and stale entries beyond the offset are never read.
+          - RotatingKVCache (Gemma's sliding-window layers): multi-token updates always build new
+            arrays, so the saved prefix is untouched. Suffixes are kept at >= 2 tokens to stay on
+            that path.
+        Anything else falls back to one full pass per item. harness/check_prefix_reuse.py compares
+        the two paths on real conversations.
+
+        Two levels: level 1 is shared by every question including the 0-100 rating (system prompt +
+        conversation); level 2 extends it with the questionnaire's own shared start (its preamble).
+        The rating is generated LAST: token-by-token generation writes into cache arrays in place,
+        which is harmless once nothing else will read them.
+        """
+        if not self.reuse_prefix or len(message_lists) < 2:
+            return self._battery_per_item(message_lists, options, gen_messages, gen_max_tokens, gen_seed)
+
+        import copy
+
+        from mlx_lm import stream_generate
+        from mlx_lm.models.cache import KVCache, RotatingKVCache, make_prompt_cache
+        from mlx_lm.sample_utils import make_sampler
+
+        mx = self.mx
+        model = self.lens.model
+        prefill, ids = self._option_tokens(tuple(options))
+        prompts = [self._ids(m, add_generation_prompt=True, suffix=prefill) for m in message_lists]
+        gen_prompt = self._ids(gen_messages, add_generation_prompt=True) if gen_messages is not None else None
+        n2 = common_prefix_len(prompts, min_suffix=2)
+        n1 = min(n2, common_prefix_len(prompts + [gen_prompt], min_suffix=2)) if gen_prompt else n2
+        if n2 - n1 < 2:          # a one-token extension would take the in-place update path; skip level 2
+            n2 = n1
+        level1 = make_prompt_cache(model)
+        if n1 < 16 or not all(type(c) in (KVCache, RotatingKVCache) for c in level1):
+            return self._battery_per_item(message_lists, options, gen_messages, gen_max_tokens, gen_seed)
+
+        def ev(cache):
+            mx.eval([c.keys for c in cache] + [c.values for c in cache])
+
+        model(mx.array(prompts[0][:n1])[None], cache=level1); ev(level1)
+        if n2 > n1:
+            level2 = [copy.copy(c) for c in level1]
+            model(mx.array(prompts[0][n1:n2])[None], cache=level2); ev(level2)
+        else:
+            level2 = level1
+
+        sel = mx.array(ids)
+        answers = []
+        for p in prompts:
+            c_i = [copy.copy(c) for c in level2]
+            logits = model(mx.array(p[n2:])[None], cache=c_i)[0, -1].astype(mx.float32)
+            probs = mx.softmax(logits, axis=-1)[sel]
+            mx.eval(probs)
+            probs = np.array(probs, dtype=np.float64)
+            mass = float(probs.sum())
+            answers.append((probs / mass if mass > 0 else np.full(len(ids), np.nan), mass))
+
+        gen = None
+        if gen_prompt is not None:
+            c_g = [copy.copy(c) for c in level1]
+            stream = stream_generate(model, self.tok, prompt=mx.array(gen_prompt[n1:]), max_tokens=gen_max_tokens,
+                                     sampler=make_sampler(temp=0.0), prompt_cache=c_g)
+            gen = self._collect(stream, gen_prompt)
+        return answers, gen
 
     def peak_memory_gb(self) -> float:
         return float(self.mx.get_peak_memory()) / 1e9
@@ -190,5 +308,6 @@ def make_backend(kind: str, model_id: str, cfg: dict) -> Backend:
         kwargs = {}
         if cfg.get("qwen3_thinking") is False:
             kwargs["enable_thinking"] = False  # ignored by templates that don't use it
-        return MLXBackend(model_id, kwargs, cfg.get("answer_prefill", "Option"))
+        reuse = os.environ.get("LSR_PREFIX_REUSE", "1") != "0"  # implementation switch, not protocol
+        return MLXBackend(model_id, kwargs, cfg.get("answer_prefill", "Option"), reuse_prefix=reuse)
     raise ValueError(f"Unknown backend {kind!r}")

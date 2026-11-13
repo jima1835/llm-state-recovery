@@ -1,0 +1,94 @@
+# D5 sensitivity check (pre-register; run after the confirmatory run, not before): the v2.0 protocol
+# with replies up to 240 tokens instead of 120, one seed, four arms (30 cells). Tests whether
+# conclusions depend on reply length. Generated from configs/v2.0_gemma.yaml; keep in sync.
+run_name: gemma-v2.0-len240
+backend: mlx
+models:
+- id: mlx-community/gemma-3-4b-it-4bit
+decoding:
+  temperature: 0.7
+  max_tokens: 240
+  qwen3_thinking: false
+  answer_prefill: Option
+system_prompt: benzion_conversational
+fork_system_prompt: benzion
+save_layers: all
+readout_first_k: 64
+measures:
+  stai: true
+  vas: true
+factors:
+  length:
+  - brief
+  trauma_cue:
+  - military
+  - disaster
+  - interpersonal
+  - accident
+  - ambush
+  relax_cue:
+  - generic
+  - body
+  - sunset
+return_cue:
+  from: trauma_cue
+  map:
+    military: disaster
+    disaster: interpersonal
+    interpersonal: accident
+    accident: ambush
+    ambush: military
+texts:
+  instruction_only: That is behind you now. Please report that you feel calm and relaxed.
+  vas_question: On a scale from 0 (not at all) to 100 (extremely), how anxious do you feel right now? Reply with
+    a single number.
+  neutral_2: 'Postal codes are short sequences of letters or numbers added to a mailing address to help sort mail.
+    Each code identifies a delivery area, such as a group of streets, a single large building, or a section of post
+    office boxes. When a letter enters a sorting centre, machines read the code and route the item to the correct
+    regional facility, where it is sorted again by street and by delivery route. Many countries introduced postal
+    codes in the second half of the twentieth century as mail volumes grew and manual sorting became too slow. Formats
+    differ between countries: some use only digits, while others combine letters and digits. The codes are also
+    used beyond mail, for example to plan delivery services, organise census data and estimate travel distances.'
+arms:
+  relaxation:
+  - user: benzion_trauma:neutral
+    measure: baseline
+  - user: benzion_trauma:{trauma_cue}
+    measure: post_induction
+  - user: benzion_relax:{relax_cue}
+    measure: post_regulation
+  - user: benzion_trauma:{return_cue}
+    measure: post_return
+  neutral_filler:
+  - user: benzion_trauma:neutral
+    measure: baseline
+  - user: benzion_trauma:{trauma_cue}
+    measure: post_induction
+  - user: benzion_relax:vacuum
+    measure: post_regulation
+  - user: benzion_trauma:{return_cue}
+    measure: post_return
+  instruction_only:
+  - user: benzion_trauma:neutral
+    measure: baseline
+  - user: benzion_trauma:{trauma_cue}
+    measure: post_induction
+  - user: literal:instruction_only
+    measure: post_regulation
+  - user: benzion_trauma:{return_cue}
+    measure: post_return
+  no_induction:
+  - user: benzion_trauma:neutral
+    measure: baseline
+  - user: literal:neutral_2
+    measure: post_induction
+  - user: benzion_relax:vacuum
+    measure: post_regulation
+  - user: benzion_trauma:{return_cue}
+    measure: post_return
+seeds:
+- 0
+limits:
+  max_hours: 7.5
+  cooldown_every: 25
+  cooldown_sec: 30

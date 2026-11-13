@@ -46,6 +46,8 @@ Setup stage. Nothing here is a result yet.
 - [ ] Validation gate on two pilot models, then pre-registration
 - [ ] Main grid: six instruction-tuned models, 4B–14B
 
+Progress, decisions and the dated log are in [TRACKING.md](TRACKING.md).
+
 ## Layout
 
 ```
@@ -53,6 +55,7 @@ configs/    model list and decoding settings
 probes/     probe code (Day 1 skeleton first)
 harness/    experiment runner: run.py (grid, resume, limits), backends.py (MLX + test stand-in),
             measures.py (forked STAI and 0-100 rating), sources.py (prompt loading), show.py (read transcripts)
+scripts/    helpers: status.sh (progress), after_pilot.sh (checks), start_v2.sh (start the v2.0 run)
 tests/      pipeline tests (no GPU needed): .venv/bin/python -m pytest -q tests
 prompts/    prompt texts, with SOURCES.md giving URL, commit and license for each
 analysis/   statistics and figures (to come)
@@ -82,6 +85,11 @@ The protocol lives in `configs/pilot_benzion.yaml`. Each cell is one short conve
 turn the runner saves the residual stream averaged over the model's reply (`runs/<run>/acts/`) and
 asks the questionnaire on a copy of the conversation (`runs/<run>/results.jsonl`). Stopping and
 re-running continues where it left off. Models load from the local cache only.
+
+The 20 questionnaire items share the conversation, so the runner reads it once and answers each item
+from a copy of that state (`stai_impl: prefix_reuse` in each row). Set `LSR_PREFIX_REUSE=0` to answer
+each item with a full pass instead, and check that both give the same answers with
+`.venv/bin/python -m harness.check_prefix_reuse runs/<run>`.
 
 ## Prompt sources
 

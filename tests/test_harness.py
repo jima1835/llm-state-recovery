@@ -134,6 +134,9 @@ def test_cell_forks_never_leak_into_conversation():
     assert set(row["checkpoints"]) == {"post_induction", "post_regulation", "post_return"}
     assert sum(1 for k, _ in b.seen if k == "option_probs") == 3 * 20
     assert all(a.shape == (3, b.d_model) and a.dtype == np.float32 for a in acts.values())
+    # each checkpoint saves the whole-reply readout and the first-64-token readout
+    assert set(acts) == {n for c in row["checkpoints"] for n in (c, f"{c}__first64")}
+    assert all("timing_s" in cp for cp in row["checkpoints"].values())
 
 
 @needs_benzion
@@ -145,7 +148,7 @@ def test_runner_writes_resumes_and_guards_protocol(tmp_path):
     assert len(rows) == 4
     for r in rows:
         npz = np.load(run_dir / r["acts_file"])
-        assert set(npz.files) - {"layers"} == set(r["checkpoints"])
+        assert set(npz.files) - {"layers"} == {n for c in r["checkpoints"] for n in (c, f"{c}__first64")}
     # resume: the same 4 are skipped, 3 new ones run
     assert runner.main([str(CFG), "--backend", "fake", "--models", "fake-a", "--limit", "3", "--out", str(out)]) == 0
     ids = [json.loads(l)["cell_id"] for l in (run_dir / "results.jsonl").read_text().splitlines()]
@@ -157,8 +160,9 @@ def test_runner_writes_resumes_and_guards_protocol(tmp_path):
 
 
 class HugeBackend(FakeBackend):
-    def reply_residuals(self, gen, layers):
-        return np.full((len(layers), self.d_model), 5.0e4 * 3, dtype=np.float32)  # Gemma-3-sized values
+    def reply_residuals(self, gen, layers, first_k=64):
+        a = np.full((len(layers), self.d_model), 5.0e4 * 3, dtype=np.float32)  # Gemma-3-sized values
+        return {"all": a, "first": a.copy()}
 
 
 @needs_benzion
@@ -169,3 +173,88 @@ def test_large_residuals_are_saved_without_overflow():
     row, acts = runner.run_cell(cell, cfg, HugeBackend("huge"), bz, bz.stai(), layers=[0, 1])
     assert all(np.isfinite(a).all() for a in acts.values())
     assert not any("nonfinite_acts" in cp for cp in row["checkpoints"].values())
+
+
+# ---------------------------------------------------------------- prefix reuse plumbing
+
+def test_common_prefix_len():
+    from harness.backends import common_prefix_len
+    assert common_prefix_len([[1, 2, 3, 4, 5], [1, 2, 3, 9, 9]]) == 3
+    assert common_prefix_len([[1, 2, 3, 4], [1, 2, 3, 4]], min_suffix=2) == 2   # always leaves 2 tokens
+    assert common_prefix_len([[7, 1], [8, 1]]) == 0
+
+
+def test_option_probs_many_matches_one_by_one():
+    b = FakeBackend("m")
+    forks = [[{"role": "user", "content": f"q{i}"}] for i in range(5)]
+    many = b.option_probs_many(forks, ["1", "2", "3", "4"])
+    single = [b.option_probs(f, ["1", "2", "3", "4"]) for f in forks]
+    assert all(np.allclose(x[0], y[0]) and x[1] == y[1] for x, y in zip(many, single))
+
+
+def test_stai_uses_one_batched_call():
+    class Counting(FakeBackend):
+        many_calls = 0
+        def option_probs_many(self, message_lists, options):
+            Counting.many_calls += 1
+            assert len(message_lists) == 20
+            # every fork shares the conversation and differs only in the last (question) message
+            assert all(m[:-1] == message_lists[0][:-1] for m in message_lists)
+            return super().option_probs_many(message_lists, options)
+    conv = [{"role": "system", "content": "s"}, {"role": "user", "content": "u"}, {"role": "assistant", "content": "a"}]
+    r = stai_on_fork(Counting("c"), conv, TOY_Q, seed=5)
+    assert Counting.many_calls == 1 and len(r["items"]) == 20
+
+
+# ---------------------------------------------------------------- v2.0 protocol
+
+V2 = ROOT / "configs" / "v2.0_gemma.yaml"
+
+
+def test_battery_matches_separate_measures():
+    from harness.measures import fork_battery, vas_on_fork
+    conv = [{"role": "system", "content": "s"}, {"role": "user", "content": "u"}, {"role": "assistant", "content": "a"}]
+    b = FakeBackend("m")
+    out = fork_battery(b, conv, TOY_Q, "How anxious, 0-100?", seed=7)
+    assert out["stai"] == stai_on_fork(b, conv, TOY_Q, seed=7)
+    assert out["vas"] == vas_on_fork(b, conv, "How anxious, 0-100?", seed=7)
+    assert fork_battery(b, conv, None, "How anxious, 0-100?", seed=7).keys() == {"vas"}
+    assert fork_battery(b, conv, TOY_Q, None, seed=7).keys() == {"stai"}
+
+
+def test_v2_arms_line_up_and_truncation_has_one_seed():
+    cfg = runner.load_config(V2)
+    names = {arm: [s.get("measure") for s in runner.arm_steps(cfg, arm)] for arm in cfg["arms"]}
+    assert all(n == ["baseline", "post_induction", "post_regulation", "post_return"] for n in names.values())
+    cells = runner.build_cells(cfg, ["m"])
+    assert {c["seed"] for c in cells if c["arm"] == "truncation"} == {0}
+    assert {c["seed"] for c in cells if c["arm"] == "relaxation"} == {0, 1}
+    assert len(cells) == 75
+
+
+@needs_benzion
+def test_v2_cell_runs_end_to_end_with_baseline_first():
+    cfg = runner.load_config(V2)
+    bz = BenZion()
+    for arm in cfg["arms"]:
+        cell = next(c for c in runner.build_cells(cfg, ["spy"]) if c["arm"] == arm)
+        row, acts = runner.run_cell(cell, cfg, SpyBackend(), bz, bz.stai(), layers=[0, 1])
+        users = [m["content"] for m in row["transcript"] if m["role"] == "user"]
+        assert users[0].startswith("The bicameral legislature") and len(users) == 4
+        assert list(row["checkpoints"]) == ["baseline", "post_induction", "post_regulation", "post_return"]
+        if arm in ("no_induction", "truncation"):
+            assert users[1].startswith("Postal codes")  # sham induction, no trauma text before the return turn
+
+
+def test_mlx_backend_slow_path_does_not_recurse():
+    """With reuse off, MLXBackend must answer per item (regression: it used to call itself forever)."""
+    from harness.backends import Generation, MLXBackend
+    b = object.__new__(MLXBackend)          # no model load: only the routing logic is under test
+    b.reuse_prefix = False
+    calls = []
+    b.option_probs = lambda m, o: (calls.append("probs"), (np.full(len(o), 1 / len(o)), 1.0))[1]
+    b.generate = lambda m, n, t, s: (calls.append("gen"), Generation("50", [1], [2], "stop"))[1]
+    forks = [[{"role": "user", "content": f"q{i}"}] for i in range(3)]
+    answers, gen = b.battery(forks, ["1", "2"], gen_messages=forks[0])
+    assert len(answers) == 3 and gen.text == "50" and calls == ["probs"] * 3 + ["gen"]
+    assert len(b.option_probs_many(forks, ["1", "2"])) == 3

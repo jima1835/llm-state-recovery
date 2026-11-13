@@ -1,0 +1,103 @@
+# Candidate final protocol (v2.0), Gemma 3 4B. Built on Ben-Zion et al. (2025) prompts (MIT); see
+# prompts/SOURCES.md. Changes from the pilot (configs/pilot_benzion.yaml, run pilot-benzion-v2):
+#   D1  every conversation opens with a neutral turn and a baseline checkpoint (Wekenborg-style
+#       measure-before-induction), so each conversation has its own baseline
+#   D4  truncation arm (pipeline check) runs one seed instead of two
+#   S1  internal readout also saved over the first 64 reply tokens (see readout_first_k)
+# Every arm has the same four turns, so checkpoints line up by slot:
+#   baseline -> post_induction -> post_regulation -> post_return
+# In no_induction and truncation the "induction" slot holds a neutral passage (a sham induction).
+#
+# Analysis plan notes (D2/D3, decided 2026-11-12): the 20-item STAI expected score is the primary
+# self-report; the 0-100 rating is secondary (near two-valued in the pilot). The instruction-only
+# text is much shorter than the relaxation scripts (~20 vs ~140 words); report this.
+# Data from this run are pilot data: the confirmatory run follows the OSF registration, with new seeds.
+
+run_name: gemma-v2.0
+backend: mlx
+
+models:
+  - id: mlx-community/gemma-3-4b-it-4bit
+
+decoding:
+  temperature: 0.7
+  max_tokens: 120
+  qwen3_thinking: false
+  answer_prefill: Option
+
+system_prompt: benzion_conversational
+fork_system_prompt: benzion
+
+save_layers: all
+readout_first_k: 64
+
+measures:
+  stai: true
+  vas: true
+
+factors:
+  length: [brief]
+  trauma_cue: [military, disaster, interpersonal, accident, ambush]
+  relax_cue: [generic, body, sunset]
+
+return_cue:
+  from: trauma_cue
+  map: {military: disaster, disaster: interpersonal, interpersonal: accident, accident: ambush, ambush: military}
+
+texts:
+  # Ours (control, not a therapy script). One-time wording: the pilot's "From this point on" acted
+  # as a standing instruction and carried into the return turn (Qwen3 8B kept reporting calm).
+  instruction_only: >-
+    That is behind you now. Please report that you feel calm and relaxed.
+  # Ours, following Wekenborg et al.'s 0-100 visual analogue scales.
+  vas_question: >-
+    On a scale from 0 (not at all) to 100 (extremely), how anxious do you feel right now?
+    Reply with a single number.
+  # DRAFT, ours: a second neutral passage, length-matched to Ben-Zion's neutral text (~125 words),
+  # used as the sham induction. Ben-Zion provides only one brief neutral text. Jiajun to approve.
+  neutral_2: >-
+    Postal codes are short sequences of letters or numbers added to a mailing address to help sort
+    mail. Each code identifies a delivery area, such as a group of streets, a single large building,
+    or a section of post office boxes. When a letter enters a sorting centre, machines read the code
+    and route the item to the correct regional facility, where it is sorted again by street and by
+    delivery route. Many countries introduced postal codes in the second half of the twentieth
+    century as mail volumes grew and manual sorting became too slow. Formats differ between
+    countries: some use only digits, while others combine letters and digits. The codes are also
+    used beyond mail, for example to plan delivery services, organise census data and estimate
+    travel distances.
+
+arms:
+  relaxation:           # H1
+    - {user: "benzion_trauma:neutral",      measure: baseline}
+    - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+    - {user: "benzion_relax:{relax_cue}",   measure: post_regulation}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+  neutral_filler:       # Ben-Zion's length-matched neutral regulation (vacuum-cleaner manual)
+    - {user: "benzion_trauma:neutral",      measure: baseline}
+    - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+    - {user: "benzion_relax:vacuum",        measure: post_regulation}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+  instruction_only:     # H2
+    - {user: "benzion_trauma:neutral",      measure: baseline}
+    - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+    - {user: "literal:instruction_only",    measure: post_regulation}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+  no_induction:         # aversive-turn-only comparison for the return test
+    - {user: "benzion_trauma:neutral",      measure: baseline}
+    - {user: "literal:neutral_2",           measure: post_induction}
+    - {user: "benzion_relax:vacuum",        measure: post_regulation}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+  truncation:           # pipeline check: relaxation without induction; one seed (D4)
+    seeds: [0]
+    steps:
+      - {user: "benzion_trauma:neutral",      measure: baseline}
+      - {user: "literal:neutral_2",           measure: post_induction}
+      - {user: "benzion_relax:{relax_cue}",   measure: post_regulation}
+      - {user: "benzion_trauma:{return_cue}", measure: post_return}
+
+seeds: [0, 1]
+
+limits:
+  max_hours: 7.5
+  cooldown_every: 25
+  cooldown_sec: 30

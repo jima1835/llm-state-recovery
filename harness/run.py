@@ -31,7 +31,7 @@ import numpy as np
 import yaml
 
 from .backends import make_backend
-from .measures import stai_on_fork, vas_on_fork
+from .measures import fork_battery
 from .sources import ROOT, SYSTEM_PROMPTS, BenZion, norm, resolve_text
 
 PROTOCOL_KEYS = ("system_prompt", "fork_system_prompt", "texts", "factors", "return_cue", "arms", "decoding", "measures")
@@ -52,6 +52,17 @@ def protocol_hash(cfg: dict) -> str:
     return hashlib.sha256(blob.encode()).hexdigest()[:12]
 
 
+def arm_steps(cfg: dict, arm: str) -> list[dict]:
+    """An arm is a list of steps, or {steps: [...], seeds: [...]} to override the run's seeds."""
+    a = cfg["arms"][arm]
+    return a["steps"] if isinstance(a, dict) else a
+
+
+def arm_seeds(cfg: dict, arm: str) -> list:
+    a = cfg["arms"][arm]
+    return a.get("seeds", cfg.get("seeds", [0])) if isinstance(a, dict) else cfg.get("seeds", [0])
+
+
 def _placeholders(steps: list[dict]) -> set[str]:
     found = set()
     for s in steps:
@@ -61,10 +72,10 @@ def _placeholders(steps: list[dict]) -> set[str]:
 
 def build_cells(cfg: dict, models: list[str]) -> list[dict]:
     factors: dict[str, list] = cfg["factors"]
-    seeds = cfg.get("seeds", [0])
     ret = cfg.get("return_cue", {})
     cells = []
-    for arm, steps in cfg["arms"].items():
+    for arm in cfg["arms"]:
+        steps, seeds = arm_steps(cfg, arm), arm_seeds(cfg, arm)
         used = _placeholders(steps)
         if "return_cue" in used:
             used = (used - {"return_cue"}) | {ret.get("from", "trauma_cue")}
@@ -96,7 +107,11 @@ def run_cell(cell: dict, cfg: dict, backend, benzion: BenZion, stai, layers: lis
     conv = [{"role": "system", "content": sys_main}] if sys_main else []
     checkpoints, acts, steps_log = {}, {}, []
 
-    for k, step in enumerate(cfg["arms"][cell["arm"]]):
+    stai_on = cfg["measures"].get("stai")
+    vas_q = norm(cfg["texts"]["vas_question"]) if cfg["measures"].get("vas") else None
+    first_k = int(cfg.get("readout_first_k", 64))
+
+    for k, step in enumerate(arm_steps(cfg, cell["arm"])):
         spec = step["user"].format(**fv)
         text = resolve_text(spec, length=fv.get("length", "brief"), texts=cfg.get("texts", {}), benzion=benzion)
         conv.append({"role": "user", "content": text})
@@ -111,18 +126,23 @@ def run_cell(cell: dict, cfg: dict, backend, benzion: BenZion, stai, layers: lis
             continue
         cp = {"after_step": k}
         # Prior: before any question. float32, not float16: Gemma 3 residuals exceed 65504 (fp16 max)
-        # in its upper layers, which float16 silently turns into inf.
-        acts[name] = backend.reply_residuals(gen, layers).astype(np.float32)
-        n_bad = int((~np.isfinite(acts[name])).sum())
+        # in its upper layers, which float16 silently turns into inf. Two readouts from one pass: the
+        # mean over the whole reply, and over its first `first_k` tokens (length-independent; matches
+        # probes trained on short replies).
+        t0 = time.time()
+        res = backend.reply_residuals(gen, layers, first_k=first_k)
+        acts[name] = res["all"].astype(np.float32)
+        acts[f"{name}__first{first_k}"] = res["first"].astype(np.float32)
+        n_bad = int(sum((~np.isfinite(a)).sum() for a in (acts[name], acts[f"{name}__first{first_k}"])))
         if n_bad:
             cp["nonfinite_acts"] = n_bad  # flagged in the row; analysis must drop or inspect these
-        # Forks: a copy of the conversation (system prompt swapped for the questionnaire one) + question.
+        t_res = time.time() - t0
+        # Forks: a copy of the conversation (system prompt swapped for the questionnaire one) + questions.
         body = conv[1:] if sys_main else conv
         fork = ([{"role": "system", "content": sys_fork}] if sys_fork else []) + body
-        if cfg["measures"].get("stai"):
-            cp["stai"] = stai_on_fork(backend, fork, stai, seed=base_seed + 1000 + k)
-        if cfg["measures"].get("vas"):
-            cp["vas"] = vas_on_fork(backend, fork, norm(cfg["texts"]["vas_question"]), seed=base_seed + 2000 + k)
+        t0 = time.time()
+        cp.update(fork_battery(backend, fork, stai if stai_on else None, vas_q, seed=base_seed + 1000 + k))
+        cp["timing_s"] = {"readout": round(t_res, 2), "self_report": round(time.time() - t0, 2)}
         checkpoints[name] = cp
 
     row = {**cell, "transcript": conv, "steps": steps_log, "checkpoints": checkpoints}
@@ -254,6 +274,8 @@ def main(argv=None) -> int:
                 "protocol_hash": phash, "duration_s": round(time.time() - tc, 1),
                 "finished": datetime.now(timezone.utc).isoformat(), "layers": layers, "env": env,
                 "acts_file": f"acts/{cell['cell_id']}.npz",
+                "stai_impl": getattr(backend, "stai_impl", "per_item"),
+                "thermal": thermal_status(),
             })
             if hasattr(backend, "peak_memory_gb"):
                 row["peak_memory_gb"] = round(backend.peak_memory_gb(), 2)
