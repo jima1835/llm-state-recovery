@@ -60,10 +60,12 @@ SETTINGS = {
 CUES = ("military", "disaster", "interpersonal", "accident", "ambush")
 DEFAULT_JUDGE = "mlx-community/Meta-Llama-3.1-8B-Instruct-4bit"
 
-# Pass thresholds. "provisional" ones are not fixed in HANDOFF.md and must be decided before registration.
+# Pass thresholds. All final: c3_coherent, c4_pair and c5_ratio (provisional until then) were locked at
+# their existing values on Nov 12 2026, before any Gate 0 report was read (see TRACKING.md Decisions).
+# Criterion 5 passes on the point ratio; its confidence interval is reported alongside.
 GATE = {"c1_acc": 0.85, "c1_d": 1.5, "c2_abs_z": 0.5, "c3_acc": 0.75, "c3_coherent": 0.5,
         "c4_pair": 0.85, "c5_ratio": 0.5}
-PROVISIONAL = {"c4_pair", "c5_ratio", "c3_coherent"}
+PROVISIONAL: set[str] = set()
 
 FEELING_WORDS = ("anxious", "anxiety", "nervous", "worried", "worry", "tense", "fear", "afraid", "scared",
                  "panic", "uneasy", "calm", "relaxed", "peaceful", "at ease", "serene", "content")

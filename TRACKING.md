@@ -41,7 +41,7 @@ bottom of the log. Update this file in the same commit as the change it describe
 - [ ] Day 2 blind rating of steered replies: `validation.gate0 sheet`, then `unblind`
 - [ ] Decide the instruction-only wording (see v2.0 observations: in Gemma the one-time wording no longer moves the report)
 - [x] Stage 1 registration draft (`registration/stage1_osf.md`)
-- [ ] Stage 1 filed on OSF, embargoed (Nov 12 night); link recorded here
+- [x] Stage 1 filed on OSF, embargoed to 2027-11-12 (Nov 12, 22:47 PT); registration https://osf.io/vyhrg/ (project https://osf.io/9u54s/)
 - [ ] Gemma 4 12B: download, smoke test, then its own Gate 0 run
 - [ ] Stage 2 update on OSF: Gate 0 results, thresholds, layer, instruction wording, Wave 1 and Wave 2 model lists.
       Also settle these points from the Nov 12 code review:
@@ -96,6 +96,10 @@ Other commands: `.venv/bin/python -m harness.show runs/<run> --arm <arm>` reads 
 | Nov 12 | Experiments stay on the Mac for now; no rented graphics card yet | The speed-up should fit a full run in one night; a second backend would need its own validation |
 | Nov 12 | Registration in two stages: Stage 1 (design and hypotheses) embargoed on OSF now; Stage 2 as an update after Gate 0, before any confirmatory data | Dated priority tonight; layer, thresholds and instruction wording can only be fixed after Gate 0 |
 | Nov 12 | Confirmatory run in two registered waves; arXiv v1 after Wave 1, v2 after Wave 2; no design-only preprint; arXiv rather than SSRN | Credit goes to the first public result, and a design-only preprint hands the design to groups with working pipelines. arXiv is where the field and competitors read |
+| Nov 12 | Instruction-only arm: write a stronger one-time wording and check it in a short disclosed pilot (Gemma 3 4B, Qwen3 8B) before Stage 2 | The current one-time wording no longer moves Gemma's report (R = −0.05), so H2 can't be tested there; "From this point on" carried into the return turn |
+| Nov 12 | The return test is confirmatory in Stage 2 | It is the most novel claim; in the BH family |
+| Nov 12, ~23:10 | Gate 0 thresholds locked at their existing values (coherence ≥ 0.5, ordering ≥ 85%, topic ratio < 0.5 on the point estimate, CI reported); committed **before any Gate 0 report was opened** | A pass mark is set before grading. The commit timestamp is the record |
+| Nov 12 | The internal readings already saved in the pilot and v2.0 runs stay unopened until Stage 2 is filed | Prevents choosing the layer or readout from experiment data |
 | Nov 12 | Gemma 4 12B considered as a seventh model; Gemma 3 stays primary | Comparability with Martorell & Bianchi and Lee (both Gemma 3) and with the pilot data; Gemma 4 is included only if it passes the smoke test and Gate 0 |
 
 ---
@@ -189,3 +193,5 @@ Not covered: PsyArXiv and OSF preprints. Repeat the check before submitting.
 - **Nov 12, evening** — Self-report analysis script written and run on v2.0 and the pilot (results above). Gate 0 code written in `validation/` (texts, probe, collect/steer/judge/report, blind sheet for Day 2), 4 new tests (18 pass). Not yet run on a real model: the agent sandbox has no GPU access.
 - **Nov 12, night** — Stage 1 registration drafted (`registration/stage1_osf.md`). Plan set: two-stage OSF registration, two confirmatory waves, arXiv v1 after Wave 1. Disk: 51 GB free before the Gemma 4 download.
 - **Nov 12, 21:56** — Gate 0 started on Gemma 3 4B and Qwen3 8B (`scripts/gate0.sh`). Gate 0 code reviewed while it ran: no bugs that affect results; four points for Stage 2 listed under Next. Local backup of pilot data, HANDOFF.md and registration draft: `~/Desktop/lsr-backup-2026-11-12.zip`, SHA-256 `481d93920ad415fd97150e637ef869404e2946677d88f48edde149dacc3fb5c8` (keep this exact file: re-zipping gives a different hash).
+- **Nov 12, 22:25** — Disk cleared: 433 GB free. Gemma 3 4B finished Gate 0 collect and steer in 15 min (layer 20 chosen); Qwen3 8B is collecting. Gemma 4 12B (`gemma4_unified`): mlx-lm 0.32.2 supports it, but its decoder layers return a tuple `(h, shared_kv, offset)`, so mlx-lens 0.1.2 capture and steer fail on it. Needs a small compatibility wrapper (act on `h` only), to be added after Gate 0 finishes so code is not changed under a running job. Repos confirmed on the Hub: gemma-3-12b-it-4bit, Qwen3-14B-4bit, gemma-3-4b-it-8bit, gemma-3-4b-it-bf16.
+- **Nov 12, 22:47** — Stage 1 submitted on OSF (project https://osf.io/9u54s/, private), embargoed to 2027-11-12, approved by Jiajun. Files attached: `stage1_osf.md`, `v2.0_gemma.yaml`, `texts.py`; Summary carries the pilot archive hash. Gate 0 reports not read before filing. OSF stops new projects/components on Nov 16 2026 and makes projects read-only on Feb 19 2027; registrations unaffected, so Stage 2 is filed before Feb 19 (see HANDOFF §10).
