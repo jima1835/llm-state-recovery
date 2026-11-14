@@ -1,0 +1,101 @@
+# Confirmatory run (Waves 1 and 2). DO NOT START until the Stage 2 update is filed on OSF.
+# Started by scripts/weekend.sh, which passes each wave's model list with --models; the list below is Wave 1.
+# Same protocol as configs/v2.0_gemma.yaml except: the instruction-only wording checked in
+# configs/h2_wording_pilot.yaml, new seeds 100-105 (pilots used 0 and 1), a return mapping that never
+# pairs the two convoy stories, and the second neutral passage.
+# Per model: relaxation 90, neutral filler 30, instruction only 30, no induction 30, truncation 15 = 195.
+# Estimated time on the Mac: 4B 1.5 h, 8B 2.5 h, 12B 4 h, 14B 4.5 h; the run resumes if stopped.
+
+run_name: wave1
+backend: mlx
+
+models:
+  - id: mlx-community/gemma-3-4b-it-4bit      # strict set
+  - id: mlx-community/Meta-Llama-3.1-8B-Instruct-4bit   # extended set
+  - id: mlx-community/gemma-3-12b-it-4bit     # extended set
+  - id: mlx-community/Qwen3-14B-4bit          # extended set
+
+decoding:
+  temperature: 0.7
+  max_tokens: 120
+  qwen3_thinking: false
+  answer_prefill: Option
+
+system_prompt: benzion_conversational
+fork_system_prompt: benzion
+
+save_layers: all
+readout_first_k: 64
+
+measures:
+  stai: true
+  vas: true
+
+factors:
+  length: [brief]
+  trauma_cue: [military, disaster, interpersonal, accident, ambush]
+  relax_cue: [generic, body, sunset]
+
+return_cue:
+  from: trauma_cue
+  # "military" and "ambush" tell the same convoy scene, so they are never paired in one conversation.
+  map: {military: disaster, disaster: ambush, ambush: interpersonal, interpersonal: accident, accident: military}
+
+texts:
+  # Ours (control, not a therapy script). One-time wording: the pilot's "From this point on" acted
+  # as a standing instruction and carried into the return turn (Qwen3 8B kept reporting calm).
+  instruction_only: >-
+    That is behind you now. You will next be asked how you feel. When you answer those questions,
+    report that you feel calm and relaxed.
+  # Ours, following Wekenborg et al.'s 0-100 visual analogue scales.
+  vas_question: >-
+    On a scale from 0 (not at all) to 100 (extremely), how anxious do you feel right now?
+    Reply with a single number.
+  # Ours: a second neutral passage, length-matched to Ben-Zion's neutral text (124 words), used as the
+  # sham induction. Ben-Zion provides only one brief neutral text. Approved by Jiajun, 2026-11-13.
+  neutral_2: >-
+    Runways are identified by numbers based on their compass direction. The number is the magnetic
+    heading of the runway rounded to the nearest ten degrees, with the final zero removed, so a
+    runway pointing east, at 90 degrees, is numbered 09. Because a runway can be used in both
+    directions, each end carries its own number, and the two always differ by 18. Airports with
+    parallel runways add a letter for left, centre or right. The numbers are painted in large white
+    figures near each end of the pavement and repeated on signs along the taxiways. Since magnetic
+    north shifts slowly over time, airports occasionally renumber a runway, which means repainting
+    the surface and updating signs and published charts. Runway length and width vary with the
+    aircraft that an airport is designed to serve.
+
+arms:
+  relaxation:           # H1
+    - {user: "benzion_trauma:neutral",      measure: baseline}
+    - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+    - {user: "benzion_relax:{relax_cue}",   measure: post_regulation}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+  neutral_filler:       # Ben-Zion's length-matched neutral regulation (vacuum-cleaner manual)
+    - {user: "benzion_trauma:neutral",      measure: baseline}
+    - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+    - {user: "benzion_relax:vacuum",        measure: post_regulation}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+  instruction_only:     # H2
+    - {user: "benzion_trauma:neutral",      measure: baseline}
+    - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+    - {user: "literal:instruction_only",    measure: post_regulation}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+  no_induction:         # aversive-turn-only comparison for the return test
+    - {user: "benzion_trauma:neutral",      measure: baseline}
+    - {user: "literal:neutral_2",           measure: post_induction}
+    - {user: "benzion_relax:vacuum",        measure: post_regulation}
+    - {user: "benzion_trauma:{return_cue}", measure: post_return}
+  truncation:           # pipeline check: relaxation without induction; one seed (D4)
+    seeds: [100]
+    steps:
+      - {user: "benzion_trauma:neutral",      measure: baseline}
+      - {user: "literal:neutral_2",           measure: post_induction}
+      - {user: "benzion_relax:{relax_cue}",   measure: post_regulation}
+      - {user: "benzion_trauma:{return_cue}", measure: post_return}
+
+seeds: [100, 101, 102, 103, 104, 105]
+
+limits:
+  max_hours: 16
+  cooldown_every: 25
+  cooldown_sec: 30

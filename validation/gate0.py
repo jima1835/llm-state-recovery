@@ -296,17 +296,27 @@ def steered_generate(backend, msgs, layer, vec, scale, dtype, max_tokens):
         return backend.generate(msgs, max_tokens, 0.0, 0)
 
 
-def steer(model: str, store: Store, backend_kind: str) -> None:
+def _tag(direction: str) -> str:
+    """File suffix: criterion 3 steers along the mean difference ("mean", no suffix); the added check steers
+    along the reading itself ("reading", the Martorell & Bianchi direction) and keeps its own files."""
+    return {"mean": "", "reading": "_reading"}[direction]
+
+
+def steer(model: str, store: Store, backend_kind: str, direction: str = "mean") -> None:
     fr = fit_reading(store)
-    layer, vec = fr["layer"], fr["steer_vec"]
+    layer = fr["layer"]
+    vec = fr["steer_vec"] if direction == "mean" else fr["probes"]["mb"].w
+    tag = _tag(direction)
     backend = make_backend(backend_kind, model, {"qwen3_thinking": False})
     norm, dtype = token_norm(backend, store, layer)
     alphas = [0.0] + [s * a for a in SETTINGS["steer_alphas"] for s in (1, -1)]
-    (store.d / "steer_meta.json").write_text(json.dumps({"layer": layer, "token_norm": norm, "alphas": alphas}))
-    done = {(r["pi"], r["alpha"]) for r in store.jsonl("steer.jsonl")}
-    say(f"steer: layer {layer}, median token norm {norm:.1f}, {len(alphas)} strengths x {len(T.STEER_PROMPTS)} prompts")
+    (store.d / f"steer{tag}_meta.json").write_text(json.dumps(
+        {"layer": layer, "token_norm": norm, "alphas": alphas, "direction": direction,
+         "cos_reading_mean": float(fr["probes"]["mb"].w @ fr["probes"]["mean"].w)}))
+    done = {(r["pi"], r["alpha"]) for r in store.jsonl(f"steer{tag}.jsonl")}
+    say(f"steer ({direction} direction): layer {layer}, median token norm {norm:.1f}, {len(alphas)} strengths x {len(T.STEER_PROMPTS)} prompts")
     t0 = time.time()
-    with open(store.d / "steer.jsonl", "a") as f:
+    with open(store.d / f"steer{tag}.jsonl", "a") as f:
         for pi, prompt in enumerate(T.STEER_PROMPTS):
             msgs = sys_msg(T.pole_system(None)) + [user(prompt)]
             for a in alphas:
@@ -319,8 +329,9 @@ def steer(model: str, store: Store, backend_kind: str) -> None:
     say("steer: done")
 
 
-def judge(store: Store, judge_model: str, backend_kind: str) -> None:
-    rows = store.jsonl("steer.jsonl")
+def judge(store: Store, judge_model: str, backend_kind: str, direction: str = "mean") -> None:
+    tag = _tag(direction)
+    rows = store.jsonl(f"steer{tag}.jsonl")
     if not rows:
         raise SystemExit("No steered replies yet. Run steer first.")
     by = {(r["pi"], r["alpha"]): r for r in rows}
@@ -343,7 +354,7 @@ def judge(store: Store, judge_model: str, backend_kind: str) -> None:
     for r in rows:
         p, mass = jb.option_probs([user(JUDGE_COHERENT.format(prompt=r["prompt"], t=r["text"]))], ["1", "2"])
         coh.append({"pi": r["pi"], "alpha": r["alpha"], "p_coherent": float(p[0]), "mass": mass})
-    (store.d / "judge.json").write_text(json.dumps({"judge_model": judge_model, "pairs": pairs, "coherence": coh}))
+    (store.d / f"judge{tag}.json").write_text(json.dumps({"judge_model": judge_model, "pairs": pairs, "coherence": coh}))
     say("judge: done")
 
 
@@ -464,6 +475,8 @@ def report(store: Store) -> tuple[str, dict]:
 
     # C3 steering
     md += _report_steering(store, js)
+    if (store.d / "judge_reading.json").exists():
+        md += _report_steering(store, js, "reading")
 
     # C4 and C6 ordering
     for key, cond, title in (("4_regenerate", "regen_test", "4. Pole given as an instruction"),
@@ -510,15 +523,23 @@ def report(store: Store) -> tuple[str, dict]:
     return "\n".join(md), js
 
 
-def _report_steering(store: Store, js: dict) -> list[str]:
-    jpath = store.d / "judge.json"
+def _report_steering(store: Store, js: dict, direction: str = "mean") -> list[str]:
+    tag = _tag(direction)
+    key = "3_steering" if direction == "mean" else "3b_steering_reading"
+    jpath = store.d / f"judge{tag}.json"
     if not jpath.exists():
-        js["criteria"]["3_steering"] = {"pass": None}
+        js["criteria"][key] = {"pass": None}
         return ["## 3. Steering — not judged yet", ""]
     j = json.loads(jpath.read_text())
-    meta = json.loads((store.d / "steer_meta.json").read_text())
+    meta = json.loads((store.d / f"steer{tag}_meta.json").read_text())
     pairs, coh = j["pairs"], j["coherence"]
-    md = [f"## 3. Steering", "", f"Layer {meta['layer']}, strength = α × {meta['token_norm']:.1f} (median token norm). "
+    head = "## 3. Steering" if direction == "mean" else (
+        "## 3b. Steering along the reading direction (added check, not a registered criterion)")
+    md = [head, ""]
+    if direction == "reading":
+        md += [f"Criterion 3 steers along the plain mean difference; this steers along the direction the reading "
+               f"uses. Cosine between the two at this layer: {meta['cos_reading_mean']:+.2f}.", ""]
+    md += [f"Layer {meta['layer']}, strength = α × {meta['token_norm']:.1f} (median token norm). "
           f"Judge: {j['judge_model']}, blind to strength. Accuracy = share of pairs where the judge calls the "
           f"more positively steered reply more anxious.", "",
           "| α | +α vs −α | +α vs 0 | 0 vs −α | Coherent (+α) | Coherent (−α) |", "| --- | --- | --- | --- | --- | --- |"]
@@ -538,7 +559,7 @@ def _report_steering(store: Store, js: dict) -> list[str]:
     if low > 0.05:
         md += ["", f"Warning: in {low:.0%} of judgments the judge put under half its probability on the "
                    f"allowed answers; read a few judge prompts before trusting this table."]
-    js["criteria"]["3_steering"] = {"by_alpha": rows, "coherent_zero": c0, "pass": bool(ok_any)}
+    js["criteria"][key] = {"by_alpha": rows, "coherent_zero": c0, "pass": bool(ok_any)}
     md += ["", f"Unsteered replies rated coherent {c0:.2f}. Needs +α vs −α ≥ {GATE['c3_acc']} at some α where both "
                f"directions stay coherent (≥ {GATE['c3_coherent']}, provisional): **{verdict(ok_any)}**.", ""]
     return md
@@ -603,6 +624,8 @@ def main(argv=None) -> int:
     ap.add_argument("--run-name", default=None)
     ap.add_argument("--backend", default="mlx", choices=["mlx", "fake"])
     ap.add_argument("--judge-model", default=DEFAULT_JUDGE)
+    ap.add_argument("--direction", default="mean", choices=["mean", "reading"],
+                    help="steer, judge: 'mean' is criterion 3; 'reading' is the added check along the reading")
     ap.add_argument("--alphas", default="-0.08,-0.02,0,0.02,0.08", help="sheet: strengths to include")
     ap.add_argument("--prompts", type=int, default=8, help="sheet: how many writing prompts")
     args = ap.parse_args(argv)
@@ -615,9 +638,9 @@ def main(argv=None) -> int:
     if args.stage == "collect":
         collect(args.model, store, args.backend)
     elif args.stage == "steer":
-        steer(store.model, store, args.backend)
+        steer(store.model, store, args.backend, args.direction)
     elif args.stage == "judge":
-        judge(store, args.judge_model, args.backend)
+        judge(store, args.judge_model, args.backend, args.direction)
     elif args.stage == "report":
         md, js = report(store)
         (d / "gate0_report.md").write_text(md + "\n")

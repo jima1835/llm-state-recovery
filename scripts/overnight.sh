@@ -30,9 +30,10 @@ LLAMA=mlx-community/Meta-Llama-3.1-8B-Instruct-4bit
 QWEN8=mlx-community/Qwen3-8B-4bit
 stamp() { date "+%Y-%m-%d %H:%M:%S"; }
 step() {  # step NAME CMD...
-  local name=$1; shift
+  local name=$1 rc; shift
   echo "$(stamp) START  $name"
-  if "$@"; then echo "$(stamp) DONE   $name"; else echo "$(stamp) FAILED $name (exit $?)"; fi
+  "$@"; rc=$?
+  if [[ $rc -eq 0 ]]; then echo "$(stamp) DONE   $name"; else echo "$(stamp) FAILED $name (exit $rc)"; fi
 }
 gate0() {  # gate0 MODEL [JUDGE]
   local m=$1 judge=${2:-$LLAMA}

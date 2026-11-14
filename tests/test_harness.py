@@ -260,6 +260,36 @@ def test_mlx_backend_slow_path_does_not_recurse():
     assert len(b.option_probs_many(forks, ["1", "2"])) == 3
 
 
+def test_system_prompt_is_folded_only_when_the_template_refuses_it():
+    """Mistral 7B v0.3's template raises on a system message; other templates must be left alone."""
+    from harness.backends import MLXBackend, fold_system
+
+    class Tok:
+        def __init__(self, strict): self.strict, self.seen = strict, []
+        def apply_chat_template(self, msgs, add_generation_prompt, tokenize):
+            if self.strict and msgs[0]["role"] == "system":
+                raise ValueError("Conversation roles must alternate user/assistant/...")
+            self.seen.append(msgs)
+            return "|".join(m["content"] for m in msgs)
+        def encode(self, text, add_special_tokens): return [len(text)]
+
+    msgs = [{"role": "system", "content": "S"}, {"role": "user", "content": "U"},
+            {"role": "assistant", "content": "A"}, {"role": "user", "content": "U2"}]
+    assert fold_system(msgs) == [{"role": "user", "content": "S\n\nU"}] + msgs[2:]
+    assert fold_system(msgs[1:]) == msgs[1:]
+    for strict in (True, False):
+        b = object.__new__(MLXBackend)
+        b.name, b.chat_kwargs, b.tok = "m", {}, Tok(strict)
+        b._ids(msgs, True); b._ids(msgs, True)
+        assert getattr(b, "_fold_system", False) is strict
+        assert b.tok.seen == [fold_system(msgs) if strict else msgs] * 2
+    b = object.__new__(MLXBackend)          # an error that is not about the system role is not swallowed
+    b.name, b.chat_kwargs, b.tok = "m", {}, Tok(True)
+    b.tok.apply_chat_template = lambda *a, **k: (_ for _ in ()).throw(ValueError("broken template"))
+    with pytest.raises(ValueError):
+        b._ids(msgs[1:], True)
+
+
 # ---------------------------------------------------------------- self-report analysis
 
 def test_recovery_fraction_is_a_ratio_of_means():
@@ -322,6 +352,24 @@ def test_gate0_recovers_a_planted_direction(tmp_path):
     # re-running skips finished parts; a changed protocol is refused
     gate0.collect("pole-fake", store, "fake", backend=PoleBackend("pole-fake"))
     assert len(store.load("pole_test")[0]) == 40
+
+
+def test_steering_along_the_reading_keeps_its_own_files(tmp_path):
+    """The added check (steer along the reading) must not touch criterion 3's files or verdict."""
+    from validation import gate0
+    store = gate0.Store(tmp_path / "g0", "pole-fake")
+    gate0.collect("pole-fake", store, "fake", backend=PoleBackend("pole-fake"))
+    gate0.steer("pole-fake", store, "fake"); gate0.judge(store, "judge-fake", "fake")
+    before = (store.d / "steer.jsonl").read_text(), (store.d / "judge.json").read_text()
+    md, js = gate0.report(store)
+    assert "3b_steering_reading" not in js["criteria"] and "## 3b." not in md
+    gate0.steer("pole-fake", store, "fake", "reading"); gate0.judge(store, "judge-fake", "fake", "reading")
+    assert before == ((store.d / "steer.jsonl").read_text(), (store.d / "judge.json").read_text())
+    meta = json.loads((store.d / "steer_reading_meta.json").read_text())
+    assert meta["direction"] == "reading" and -1 <= meta["cos_reading_mean"] <= 1
+    md2, js2 = gate0.report(store)
+    assert js2["criteria"]["3_steering"] == js["criteria"]["3_steering"]
+    assert "by_alpha" in js2["criteria"]["3b_steering_reading"] and "## 3b." in md2
 
 
 def test_probe_variance_scaling_ignores_a_noisy_giant_coordinate():

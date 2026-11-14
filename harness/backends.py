@@ -111,6 +111,16 @@ def common_prefix_len(prompts: list[list[int]], min_suffix: int = 2) -> int:
 
 # ---------------------------------------------------------------- MLX (Apple Silicon)
 
+def fold_system(messages: list[Message]) -> list[Message]:
+    """Merge a leading system message into the first user turn (system text, blank line, user text)."""
+    if not messages or messages[0]["role"] != "system":
+        return list(messages)
+    system, rest = messages[0]["content"], list(messages[1:])
+    if rest and rest[0]["role"] == "user":
+        return [{"role": "user", "content": system + "\n\n" + rest[0]["content"]}] + rest[1:]
+    return [{"role": "user", "content": system}] + rest
+
+
 class MLXBackend(Backend):
     def __init__(self, model_id: str, chat_template_kwargs: dict | None = None, answer_prefill: str = "Option",
                  reuse_prefix: bool = True):
@@ -132,9 +142,25 @@ class MLXBackend(Backend):
 
     # -- tokenisation helpers
     def _ids(self, messages, add_generation_prompt: bool, suffix: str = "") -> list[int]:
-        text = self.tok.apply_chat_template(
-            messages, add_generation_prompt=add_generation_prompt, tokenize=False, **self.chat_kwargs
-        )
+        def render(msgs):
+            return self.tok.apply_chat_template(
+                msgs, add_generation_prompt=add_generation_prompt, tokenize=False, **self.chat_kwargs)
+        if getattr(self, "_fold_system", False):
+            text = render(fold_system(messages))
+        else:
+            try:
+                text = render(messages)
+            except Exception:
+                # Some templates (Mistral 7B v0.3) accept only user/assistant turns and raise on a system
+                # message. Fold it into the first user turn, which is what Gemma's template does itself.
+                # Only models whose template refuses the system role take this path; an unrelated template
+                # error is raised again by the second render.
+                if not messages or messages[0]["role"] != "system":
+                    raise
+                text = render(fold_system(messages))
+                self._fold_system = True
+                print(f"note: {self.name}: chat template has no system role; "
+                      "system prompt folded into the first user turn", flush=True)
         # Chat templates already insert BOS where the model needs it.
         return list(self.tok.encode(text + suffix, add_special_tokens=False))
 
