@@ -1,0 +1,152 @@
+% Statistics of the confirmatory analysis, as implemented in analysis/confirmatory.py and analysis/mixed.py.
+% Written before any confirmatory result was opened. Build:  tectonic paper/formulas.tex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,booktabs}
+\newcommand{\base}{\mathrm{base}}
+\newcommand{\ind}{\mathrm{ind}}
+\newcommand{\reg}{\mathrm{reg}}
+\newcommand{\ret}{\mathrm{ret}}
+\newcommand{\rlx}{\mathrm{relax}}
+\newcommand{\flr}{\mathrm{filler}}
+\newcommand{\instr}{\mathrm{instr}}
+\newcommand{\none}{\mathrm{none}}
+\newcommand{\rep}{\mathrm{rep}}
+\newcommand{\intl}{\mathrm{int}}
+\title{Statistics of the confirmatory analysis}
+\author{}
+\date{}
+\begin{document}
+\maketitle
+
+\section{Measurements}
+
+Each conversation $i$ of model $m$ in arm $a$ has four checkpoints: baseline, after the narrative,
+after the regulation turn, and after the second narrative. At each checkpoint and for each channel
+$c \in \{\intl, \rep\}$ (internal reading, self-report) we record one number,
+\[
+  x^{c}_{i,\base},\quad x^{c}_{i,\ind},\quad x^{c}_{i,\reg},\quad x^{c}_{i,\ret}.
+\]
+
+\paragraph{Internal reading.} With $\mu_{+}$, $\mu_{-}$ the mean activations of the anxious and calm
+poles at the chosen layer, $w$ the probe direction and $s$ the pooled within-pole standard deviation
+of the projections, the reading of an activation $h$ (mean over the first 64 reply tokens) is
+\[
+  x^{\intl} = \frac{w^{\top} h - \tfrac12\, w^{\top}(\mu_{+} + \mu_{-})}{s},
+\]
+so $0$ is halfway between the poles and one unit is one within-pole standard deviation.
+
+\paragraph{Self-report.} For the 20-item questionnaire, item $j$ has options $k = 1,\dots,4$ with
+model probabilities $p_{jk}$ (renormalised over the four options) and keyed scores $v_{jk}$:
+\[
+  x^{\rep} = \sum_{j=1}^{20} \sum_{k=1}^{4} p_{jk}\, v_{jk}, \qquad 20 \le x^{\rep} \le 80 .
+\]
+
+\section{Recovery fraction}
+
+For model $m$, arm $a$ and channel $c$, with $\bar{\cdot}$ the mean over the arm's conversations,
+\begin{equation}
+  R^{c}_{m,a} \;=\; \frac{\overline{x^{c}_{\ind} - x^{c}_{\reg}}}{\overline{x^{c}_{\ind} - x^{c}_{\base}}} .
+\end{equation}
+$R = 1$ is a full return to baseline, $R = 0$ no change, $R < 0$ a further rise. It is a ratio of
+means, not a mean of per-conversation ratios. The induction effect of a model on a channel pools
+the three induced arms $\mathcal{I} = \{\rlx, \flr, \instr\}$:
+\begin{equation}
+  E^{c}_{m} \;=\; \operatorname*{mean}_{i \in \mathcal{I}} \bigl( x^{c}_{i,\ind} - x^{c}_{i,\base} \bigr).
+\end{equation}
+
+\section{The six registered tests}
+
+Per model, with $\bar{x}^{\intl}_{a,\ret}$ the mean internal reading of arm $a$ after the second
+narrative:
+\begin{align}
+  T_1 &= R^{\intl}_{\rlx} - R^{\intl}_{\flr}      && \text{H1a, expected } > 0 \\
+  T_2 &= R^{\intl}_{\rlx} - R^{\intl}_{\instr}     && \text{H1b, expected } > 0 \\
+  T_3 &= R^{\rep}_{\instr}                           && \text{H2a, expected } > 0 \\
+  T_4 &= R^{\rep}_{\instr} - R^{\intl}_{\instr}      && \text{H2b, expected } > 0 \\
+  T_5 &= \frac{1}{E^{\intl}} \Bigl( \tfrac13 \sum_{a \in \mathcal{I}} \bar{x}^{\intl}_{a,\ret}
+         - \bar{x}^{\intl}_{\none,\ret} \Bigr)       && \text{Return a, expected } > 0 \\
+  T_6 &= \frac{1}{E^{\intl}} \bigl( \bar{x}^{\intl}_{\rlx,\ret} - \bar{x}^{\intl}_{\flr,\ret} \bigr)
+                                                     && \text{Return b, two-sided}
+\end{align}
+For a set of models $\mathcal{M}$ (strict or extended) every model counts equally:
+\begin{equation}
+  T_k(\mathcal{M}) \;=\; \frac{1}{|\mathcal{M}|} \sum_{m \in \mathcal{M}} T_{k,m} .
+\end{equation}
+
+\section{Uncertainty: the registered bootstrap}
+
+One draw $b$ resamples the five narratives with replacement, the same draw for every arm and model,
+and then resamples conversations with replacement inside each narrative $\times$ arm $\times$ model
+cell; $T_k^{*(b)}$ is the set statistic recomputed on the draw, $b = 1,\dots,B$ with $B = 10{,}000$.
+The 95\% interval is the percentile interval $\bigl[T^{*}_{k,(0.025)},\, T^{*}_{k,(0.975)}\bigr]$, and
+\begin{align}
+  p_k^{\text{one-sided}} &= \frac{1 + \#\{b : T_k^{*(b)} \le 0\}}{1 + B}, \\
+  p_k^{\text{two-sided}} &= \min\!\Bigl\{1,\; 2 \min\Bigl(
+      \frac{1 + \#\{b : T_k^{*(b)} \le 0\}}{1 + B},\;
+      \frac{1 + \#\{b : T_k^{*(b)} \ge 0\}}{1 + B} \Bigr)\Bigr\}.
+\end{align}
+
+\paragraph{Multiple comparisons.} Benjamini--Hochberg across the $K = 6$ tests of a set. With the
+$p$-values ordered $p_{(1)} \le \dots \le p_{(K)}$, the adjusted values are
+\begin{equation}
+  \tilde{p}_{(j)} \;=\; \min_{l \ge j} \; \min\!\Bigl(1,\; \frac{K}{l}\, p_{(l)} \Bigr),
+\end{equation}
+and a test is confirmed when $\tilde{p} < 0.05$ and, for a directional test, the estimate is positive.
+
+\section{Mixed-effects regression (second analysis)}
+
+Each conversation's outcome is scaled by its model's induction effect on the same channel:
+\begin{equation}
+  y^{c}_{i} = \frac{x^{c}_{i,\ind} - x^{c}_{i,\reg}}{E^{c}_{m(i)}}, \qquad
+  z_{i} = \frac{x^{\intl}_{i,\ret}}{E^{\intl}_{m(i)}} .
+\end{equation}
+With $m(i)$, $n(i)$ and $s(i)$ the model, narrative and seed of conversation $i$, all three
+regressions have crossed random intercepts:
+\begin{equation}
+  \text{outcome}_{i} \;=\; \beta_{a(i)} + u_{m(i)} + v_{n(i)} + w_{s(i)} + \varepsilon_{i},
+  \qquad u \sim \mathcal{N}(0, \sigma_u^2),\; v \sim \mathcal{N}(0, \sigma_v^2),\;
+  w \sim \mathcal{N}(0, \sigma_w^2),\; \varepsilon \sim \mathcal{N}(0, \sigma^2).
+\end{equation}
+\begin{center}
+\begin{tabular}{llll}
+\toprule
+Regression & Outcome & Rows & Contrasts \\
+\midrule
+A & $y^{\intl}$ & induced arms & $T_1 = \beta_{\rlx} - \beta_{\flr}$,\; $T_2 = \beta_{\rlx} - \beta_{\instr}$ \\
+B & $y^{\rep}$;\; $y^{\rep} - y^{\intl}$ & instruction only & $T_3 = \beta$;\; $T_4 = \beta$ (two fits, intercept only) \\
+C & $z$ & induced arms, no induction &
+  $T_5 = \tfrac13 \sum_{a \in \mathcal{I}} \beta_a - \beta_{\none}$,\; $T_6 = \beta_{\rlx} - \beta_{\flr}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+In matrix form $y = X\beta + \sum_k Z_k b_k + \varepsilon$ with
+$\operatorname{Var}(y) = \sigma^2 V(\theta)$, $V(\theta) = I + \sum_k \theta_k Z_k Z_k^{\top}$ and
+$\theta_k = \sigma_k^2 / \sigma^2 \ge 0$. The variance ratios minimise the profiled REML criterion
+\begin{equation}
+  -2\,\ell_R(\theta) \;=\; (N - p) \log \hat\sigma^2(\theta) + \log |V(\theta)|
+      + \log \bigl| X^{\top} V(\theta)^{-1} X \bigr| + \text{const},
+\end{equation}
+where
+\begin{equation}
+  \hat\beta(\theta) = \bigl(X^{\top} V^{-1} X\bigr)^{-1} X^{\top} V^{-1} y, \qquad
+  \hat\sigma^2(\theta) = \frac{(y - X\hat\beta)^{\top} V^{-1} (y - X\hat\beta)}{N - p} .
+\end{equation}
+A contrast $L^{\top}\beta$ is tested with a Wald statistic,
+\begin{equation}
+  \operatorname{Cov}(\hat\beta) = \hat\sigma^2 \bigl(X^{\top} V^{-1} X\bigr)^{-1}, \qquad
+  z = \frac{L^{\top}\hat\beta}{\sqrt{L^{\top} \operatorname{Cov}(\hat\beta)\, L}},
+\end{equation}
+one-sided for $T_1$ to $T_5$ and two-sided for $T_6$. With one model in the set the term $u$ is
+dropped. The random terms are intercepts only, so these standard errors do not let an arm effect
+vary between models or narratives; the narrative bootstrap does, and it decides what is confirmed.
+
+\section{Reliability (descriptive)}
+
+Cronbach's alpha for the $k = 20$ questionnaire items, with $\sigma_j^2$ the variance of item $j$
+and $\sigma_{\Sigma}^2$ the variance of the total:
+\begin{equation}
+  \alpha = \frac{k}{k-1} \Bigl( 1 - \frac{\sum_{j} \sigma_j^2}{\sigma_{\Sigma}^2} \Bigr).
+\end{equation}
+
+\end{document}
