@@ -1,6 +1,9 @@
 annotated-doc==0.0.6
 annotated-types==0.8.0
 anyio==4.16.0
+arxiv==4.1.0
+certifi==2026.10.23
+charset-normalizer==3.5.2
 click==8.5.1
 filelock==4.2.10
 formulaic==1.2.2
@@ -14,6 +17,7 @@ idna==3.20
 iniconfig==2.3.1
 interface-meta==2.0.1
 jinja2==3.1.6
+lxml==6.1.3
 markdown-it-py==4.3.0
 markupsafe==3.0.4
 mdurl==0.1.2
@@ -35,6 +39,7 @@ pytest==9.2.0
 python-dateutil==4.0.0
 pyyaml==6.0.3
 regex==2026.11.9
+requests==2.34.2
 rich==15.0.0
 safetensors==0.8.0
 scipy==1.18.1
@@ -49,4 +54,5 @@ typer==0.29.1
 typing-extensions==4.16.0
 typing-inspection==0.4.5
 tzdata==2026.6
+urllib3==2.8.0
 wrapt==2.5.2

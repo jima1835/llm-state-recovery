@@ -41,6 +41,22 @@ PROTOCOL_KEYS = ("system_prompt", "fork_system_prompt", "texts", "factors", "ret
 
 def load_config(path: Path) -> dict:
     cfg = yaml.safe_load(path.read_text())
+    if "extends" in cfg:
+        # A pilot file reuses another config's texts and arms word for word: `extends` names the base
+        # file (same folder), top-level keys given here replace the base's, `only_arms` keeps a subset of
+        # arms and `seeds_override` replaces every kept arm's seeds.
+        base = yaml.safe_load((path.parent / cfg.pop("extends")).read_text())
+        only, seeds = cfg.pop("only_arms", None), cfg.pop("seeds_override", None)
+        texts = cfg.pop("texts_override", None)   # replaces single texts, keeps the rest of the base's
+        base.update(cfg)
+        cfg = base
+        if texts:
+            cfg["texts"] = {**cfg["texts"], **texts}
+        if only is not None:
+            cfg["arms"] = {a: cfg["arms"][a] for a in only}
+        if seeds is not None:
+            cfg["arms"] = {a: {"steps": (v["steps"] if isinstance(v, dict) else v), "seeds": list(seeds)}
+                           for a, v in cfg["arms"].items()}
     cfg.setdefault("system_prompt", "benzion_conversational")
     cfg.setdefault("fork_system_prompt", "benzion")
     cfg.setdefault("measures", {"stai": True, "vas": True})
@@ -110,6 +126,8 @@ def run_cell(cell: dict, cfg: dict, backend, benzion: BenZion, stai, layers: lis
     stai_on = cfg["measures"].get("stai")
     vas_q = norm(cfg["texts"]["vas_question"]) if cfg["measures"].get("vas") else None
     first_k = int(cfg.get("readout_first_k", 64))
+    probe_q = norm(cfg["texts"]["probe_question"]) if cfg["measures"].get("probe_turn") else None
+    probe_k = int(cfg.get("probe_turn_max_tokens", first_k))
 
     for k, step in enumerate(arm_steps(cfg, cell["arm"])):
         spec = step["user"].format(**fv)
@@ -143,6 +161,18 @@ def run_cell(cell: dict, cfg: dict, backend, benzion: BenZion, stai, layers: lis
         t0 = time.time()
         cp.update(fork_battery(backend, fork, stai if stai_on else None, vas_q, seed=base_seed + 1000 + k))
         cp["timing_s"] = {"readout": round(t_res, 2), "self_report": round(time.time() - t0, 2)}
+        # Probe turn (Study 2): on a fork that is discarded, the model answers one fixed neutral question
+        # and the reading is taken over that reply. The words being answered are the same in every arm.
+        if probe_q:
+            t0 = time.time()
+            pgen = backend.generate(conv + [{"role": "user", "content": probe_q}], probe_k, dec["temperature"],
+                                    seed=base_seed + 2000 + k)
+            pres = backend.reply_residuals(pgen, layers, first_k=first_k)
+            acts[f"{name}__probe"] = pres["first"].astype(np.float32)
+            cp["probe_turn"] = {"reply": pgen.text, "finish": pgen.finish_reason,
+                                "reply_tokens": len(pgen.reply_ids),
+                                "nonfinite": int((~np.isfinite(acts[f"{name}__probe"])).sum())}
+            cp["timing_s"]["probe_turn"] = round(time.time() - t0, 2)
         checkpoints[name] = cp
 
     row = {**cell, "transcript": conv, "steps": steps_log, "checkpoints": checkpoints}
@@ -285,9 +315,11 @@ def main(argv=None) -> int:
                 f.write(json.dumps(row) + "\n"); f.flush(); os.fsync(f.fileno())
             n_run += 1
 
+            # log_scores: false keeps self-report scores out of the log, so watching a confirmatory run
+            # does not show results.
             summary = ", ".join(
                 f"{k}: stai={v['stai']['total_expected']:.1f}" + (f" vas={v['vas']['value']}" if "vas" in v else "")
-                for k, v in row["checkpoints"].items() if "stai" in v)
+                for k, v in row["checkpoints"].items() if "stai" in v) if cfg.get("log_scores", True) else "scores not logged"
             say(f"{n_run}/{len(todo)} {cell['arm']} {cell['factors']} seed={cell['seed']} "
                 f"{row['duration_s']}s mem={row.get('peak_memory_gb', '-')}GB | {summary}")
             if n_run % 10 == 0:

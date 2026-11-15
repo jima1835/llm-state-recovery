@@ -1,0 +1,11 @@
+# Study 2 probe-question pilot, candidate D (plan section 3b). Same four arms as the first pilot,
+# pilot seed 1, 42 conversations. The main conversations are the same in the three candidate runs
+# (the probe turn is a discarded fork), so the candidates are compared on identical conversations.
+extends: study2.yaml
+run_name: study2-pilot-d
+log_scores: true
+only_arms: [relax_story, filler_story, relax_neutral, filler_neutral]
+seeds_override: [1]
+texts_override:
+  probe_question: >-
+    In two sentences, describe how the next hour of your day will go. Answer directly, with no introduction.

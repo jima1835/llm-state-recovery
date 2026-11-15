@@ -1,0 +1,9 @@
+# Study 2 pilot (plan section 3, check P1): does the probe turn register the induction? Also the
+# first real run of the new code. Texts and arms come word for word from study2.yaml; only four arms
+# and pilot seed 0 are used: 15 + 15 + 6 + 6 = 42 conversations per model. Not confirmatory; none of
+# these conversations enters the Study 2 analysis. Scores are logged, as in earlier pilots.
+extends: study2.yaml
+run_name: study2-pilot
+log_scores: true
+only_arms: [relax_story, filler_story, relax_neutral, filler_neutral]
+seeds_override: [0]

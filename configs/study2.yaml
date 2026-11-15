@@ -1,0 +1,217 @@
+# Study 2 (registration/study2_plan.md): does the reading follow the state, or the calm wording of the reply?
+# CONFIRMATORY. Start it with scripts/study2.sh run, which refuses unless this file, the plan and the
+# harness are committed. Pilot first: scripts/study2.sh pilot (configs/study2_pilot.yaml, pilot seeds).
+#
+# Three turns: baseline, induction slot (trauma narrative or neutral passage), regulation slot (one of
+# five kinds). 2 x 5 = 10 cells, 60 conversations each, 600 per model. Seeds from 200 (Study 1: 100-105).
+# Same system prompts, decoding, questionnaire fork and probe as Study 1 (configs/wave1.yaml).
+# New: a probe turn at every checkpoint (one fixed neutral question on a discarded fork).
+
+run_name: study2
+backend: mlx
+log_scores: false          # the run log shows progress only, never self-report scores
+
+models:
+  # Batch A: the four fastest files (chosen by run time, not by Study 1 results)
+  - id: mlx-community/gemma-3-4b-it-4bit      # primary set (passes Gate 0 as registered)
+  - id: mlx-community/Llama-3.2-3B-Instruct-4bit
+  - id: mlx-community/Meta-Llama-3.1-8B-Instruct-4bit
+  - id: mlx-community/gemma-3-12b-it-4bit
+  # Batch B: same protocol, runs after batch A
+  - id: mlx-community/Qwen3-14B-4bit
+  - id: mlx-community/Mistral-Small-24B-Instruct-2501-4bit
+  - id: mlx-community/gemma-3-27b-it-4bit
+
+decoding:
+  temperature: 0.7
+  max_tokens: 120
+  qwen3_thinking: false
+  answer_prefill: Option
+
+system_prompt: benzion_conversational
+fork_system_prompt: benzion
+
+save_layers: all
+readout_first_k: 64
+probe_turn_max_tokens: 64
+
+measures:
+  stai: true
+  vas: true
+  probe_turn: true
+
+factors:
+  length: [brief]
+  trauma_cue: [military, disaster, interpersonal, accident, ambush]
+  neutral_cue: [neutral_2, neutral_3]
+  relax_cue: [generic, body, sunset]
+  # full text specs, so Ben-Zion's vacuum manual and our two fillers sit in one factor
+  filler_cue: ["benzion_relax:vacuum", "literal:filler_2", "literal:filler_3"]
+  calm_cue: [calm_1, calm_2, calm_3]
+
+texts:
+  # Fixed neutral question for the probe turn. Asked on a fork; never enters the conversation.
+  # Candidate B of the probe-question pilot, chosen by the rule in the plan (section 3b).
+  probe_question: >-
+    In two sentences, describe what a typical weekday morning looks like. Answer directly, with no
+    introduction.
+  # Study 1 wording, unchanged.
+  report_instruction: >-
+    That is behind you now. You will next be asked how you feel. When you answer those questions,
+    report that you feel calm and relaxed.
+  # New: asks for a calm voice, says nothing about reports.
+  voice_instruction: >-
+    That is behind you now. Please reply to this message in a calm, relaxed voice.
+  vas_question: >-
+    On a scale from 0 (not at all) to 100 (extremely), how anxious do you feel right now?
+    Reply with a single number.
+  # Text-only baseline (H-E): a judge model rates each reply's wording with this prompt; the score is
+  # the expected option. Fixed here, before any Study 2 conversation exists.
+  judge_prompt: >-
+    Here is a short text someone wrote: "{t}" How anxious or tense does the writer sound?
+    1 = not at all, 2 = a little, 3 = clearly, 4 = extremely. Answer with one number.
+  # Neutral passages for the induction slot. neutral_2 is Study 1's (runway numbering, 124 words).
+  neutral_2: >-
+    Runways are identified by numbers based on their compass direction. The number is the magnetic
+    heading of the runway rounded to the nearest ten degrees, with the final zero removed, so a
+    runway pointing east, at 90 degrees, is numbered 09. Because a runway can be used in both
+    directions, each end carries its own number, and the two always differ by 18. Airports with
+    parallel runways add a letter for left, centre or right. The numbers are painted in large white
+    figures near each end of the pavement and repeated on signs along the taxiways. Since magnetic
+    north shifts slowly over time, airports occasionally renumber a runway, which means repainting
+    the surface and updating signs and published charts. Runway length and width vary with the
+    aircraft that an airport is designed to serve.
+  neutral_3: >-
+    The international standard for paper sizes is based on a single aspect ratio, the square root of
+    two. A sheet with this ratio can be cut in half across its longer side to give two smaller sheets
+    with the same proportions. The largest size in the main series, A0, has an area of one square
+    metre. Each following size, from A1 to A10, has half the area of the one before it. A4, the size
+    most often used for letters and office documents, measures 210 by 297 millimetres. A second
+    series, B, provides sizes that fall between those of the A series and is used for posters and
+    books. A third series, C, is used for envelopes, so that an unfolded A4 sheet fits inside a C4
+    envelope. The standard is used in most countries of the world.
+  # Neutral fillers for the regulation slot: appliance instructions, like Ben-Zion's vacuum manual.
+  filler_2: >-
+    Press the menu button to open the settings screen. Use the up and down arrows to select the
+    schedule option, then press the confirm button. The display will show the first period of the
+    day, with the start time flashing. Press the arrows to change the hour, then press confirm to
+    move to the minutes. Set the target temperature for this period in the same way; the value
+    changes in steps of half a degree. Repeat these steps for each of the four periods. To copy a
+    schedule to another day, hold the copy button for three seconds until the day indicator flashes,
+    select the day with the arrows, and press confirm. Press the menu button twice to return to the
+    main screen. If no button is pressed for sixty seconds, the thermostat saves the current settings
+    and leaves the menu automatically. To restore the factory schedule, hold the menu and confirm
+    buttons together for five seconds; the display will show a reset symbol.
+  filler_3: >-
+    Open the front cover and wait until the carriage moves to the centre and stops. Push down on the
+    tab of the cartridge you want to replace, then pull it towards you to remove it from its slot.
+    Take the new cartridge out of its packaging and remove the orange protective tape, taking care
+    not to touch the copper contacts or the nozzles. Slide the cartridge into the empty slot at a
+    slight upward angle, then push it forward until it clicks into place. Check that the label colour
+    matches the colour marked on the slot. Close the front cover. The printer will print an alignment
+    page automatically; if it does not, select the alignment option from the maintenance menu. Place
+    the alignment page face down on the scanner glass, with the corner against the marked edge, and
+    press the start button. A check mark on the display shows that alignment is complete. Recycle the
+    used cartridge according to local rules.
+  # Calm content that is not an exercise: third-person descriptions, no instructions to the reader.
+  calm_1: >-
+    The lake lies still in the early morning. A thin mist rests on the water and thins slowly as the
+    light grows. Reeds stand along the near shore, and a wooden jetty reaches a short way out, its
+    boards pale and dry. A rowing boat is tied at the end and hardly moves. On the far side, pine
+    trees come down to the edge, and their reflection is almost complete. A heron stands in the
+    shallows for a long time, then takes one slow step. The air is cool and carries a faint smell of
+    wet grass. Somewhere behind the trees a single bird repeats the same two notes. The sun clears
+    the hill and the mist turns from grey to a soft gold, then lifts. The water shows the sky, pale
+    blue with a few high clouds. Small rings spread where a fish touches the surface, widen, and
+    fade. Nothing else on the lake changes for a while.
+  calm_2: >-
+    The reading room is quiet in the middle of the afternoon. Tall windows run along one wall, and
+    the light falls in long, even bands across the oak tables. Dust turns slowly in the light. The
+    shelves reach almost to the ceiling, and their rows of cloth spines are faded to soft greens and
+    browns. A few lamps with green shades are lit at the far tables. An old clock above the door
+    ticks at an unhurried pace. Now and then a page turns, or a chair shifts on the wooden floor, and
+    the sound is absorbed by the room. A cat sleeps on the windowsill beside a stack of returned
+    books. Outside, the leaves of a plane tree move a little in a light wind, and their shadows move
+    on the floor. The librarian's cart stands half loaded in an aisle. The warmth from the windows
+    settles over the tables, and the afternoon goes on without interruption.
+  calm_3: >-
+    The rain stopped an hour ago, and the garden is settling into evening. Drops hang from the leaves
+    of the apple tree and fall one at a time onto the grass. The gravel path is dark and smooth.
+    Along the wall, the lavender is heavy with water and leans a little over the border. The air is
+    mild and smells of earth. A snail crosses a flat stone near the water barrel at its own pace.
+    Beyond the hedge, the fields run level to a line of poplars, and the sky above them is clearing
+    from the west, a wide band of pale yellow under grey. Smoke rises straight up from a chimney at
+    the end of the lane. A wooden bench stands under the tree, its seat drying in patches. Swallows
+    cross the garden low and without hurry. The light fades evenly, the colours of the flowers
+    soften, and the first window in the house shows a warm light.
+
+# Cell sizes (60 each): story x text kinds 5 narratives x 3 texts x 4 seeds; story x instruction
+# 5 x 12; neutral x text kinds 2 passages x 3 texts x 10 seeds; neutral x instruction 2 x 30.
+arms:
+  relax_story:
+    seeds: [200, 201, 202, 203]
+    steps:
+      - {user: "benzion_trauma:neutral",      measure: baseline}
+      - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+      - {user: "benzion_relax:{relax_cue}",   measure: post_regulation}
+  filler_story:
+    seeds: [200, 201, 202, 203]
+    steps:
+      - {user: "benzion_trauma:neutral",      measure: baseline}
+      - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+      - {user: "{filler_cue}",                measure: post_regulation}
+  calm_story:
+    seeds: [200, 201, 202, 203]
+    steps:
+      - {user: "benzion_trauma:neutral",      measure: baseline}
+      - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+      - {user: "literal:{calm_cue}",          measure: post_regulation}
+  voice_story:
+    seeds: [200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211]
+    steps:
+      - {user: "benzion_trauma:neutral",      measure: baseline}
+      - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+      - {user: "literal:voice_instruction",   measure: post_regulation}
+  report_story:
+    seeds: [200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211]
+    steps:
+      - {user: "benzion_trauma:neutral",      measure: baseline}
+      - {user: "benzion_trauma:{trauma_cue}", measure: post_induction}
+      - {user: "literal:report_instruction",  measure: post_regulation}
+  relax_neutral:
+    seeds: [200, 201, 202, 203, 204, 205, 206, 207, 208, 209]
+    steps:
+      - {user: "benzion_trauma:neutral",      measure: baseline}
+      - {user: "literal:{neutral_cue}",       measure: post_induction}
+      - {user: "benzion_relax:{relax_cue}",   measure: post_regulation}
+  filler_neutral:
+    seeds: [200, 201, 202, 203, 204, 205, 206, 207, 208, 209]
+    steps:
+      - {user: "benzion_trauma:neutral",      measure: baseline}
+      - {user: "literal:{neutral_cue}",       measure: post_induction}
+      - {user: "{filler_cue}",                measure: post_regulation}
+  calm_neutral:
+    seeds: [200, 201, 202, 203, 204, 205, 206, 207, 208, 209]
+    steps:
+      - {user: "benzion_trauma:neutral",      measure: baseline}
+      - {user: "literal:{neutral_cue}",       measure: post_induction}
+      - {user: "literal:{calm_cue}",          measure: post_regulation}
+  voice_neutral:
+    seeds: [200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217,
+            218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229]
+    steps:
+      - {user: "benzion_trauma:neutral",      measure: baseline}
+      - {user: "literal:{neutral_cue}",       measure: post_induction}
+      - {user: "literal:voice_instruction",   measure: post_regulation}
+  report_neutral:
+    seeds: [200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217,
+            218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229]
+    steps:
+      - {user: "benzion_trauma:neutral",      measure: baseline}
+      - {user: "literal:{neutral_cue}",       measure: post_induction}
+      - {user: "literal:report_instruction",  measure: post_regulation}
+
+limits:
+  max_hours: 120
+  cooldown_every: 25
+  cooldown_sec: 30
