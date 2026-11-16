@@ -21,3 +21,9 @@ HANDOFF.md
 
 # Local chat page: its own nested repository (see chat/README.md)
 chat/
+
+# Paper framing notes (strategy, not for the public repo)
+paper/project_context.md
+
+# Local reference PDFs (own and others' papers); not for the public repo
+input/

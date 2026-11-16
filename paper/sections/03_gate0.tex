@@ -1,0 +1,100 @@
+\section{The reply reading passes criteria 1 to 6 in one of 16 model files}
+\label{sec:gate0}
+
+% Claim first.
+One model file, Gemma 3 4B at 4 bits, passes criteria 1 to 6 of our validation, and seven more fail
+only criterion 2, whose premise we now judge wrong.
+The same Gemma 3 4B fails criterion 7: at 8-bit and at bf16 precision it fails criterion 4, so we
+restrict every claim to the 4-bit file.
+We call the validation Gate 0, and we locked its thresholds before opening any Gate 0 report.
+A model enters the analyses of the reply reading only through this gate.
+
+% The criteria.
+\para{Seven criteria.}
+Each criterion tests one way a reading can mislead.
+(C1) The direction separates held-out anxious and calm replies with accuracy of at least 0.85 and
+Cohen's $d \geq 1.5$.
+(C2) Uninstructed replies, written with no pole prompt, score within $\pm 0.5$ SD units of the midpoint.
+(C3) Adding the direction to the activations shifts the voice of the reply: a judge model, blind to
+the strength, picks the steered text as more anxious at least 75\% of the time, at one or more of six
+strengths at which the text stays coherent.
+(C4) Replies under prompts to sound calm, uneasy and very anxious order correctly at least 85\% of the time.
+(C5) A narrative told as another person's account, and the same narrative set as an analysis task,
+each move the reading less than half as much as the model's own induction.
+(C6) C1 and C4 hold at turn 8 of a longer conversation (C6a and C6b).
+(C7) C1 to C4 hold at 8-bit and at bf16 precision.
+The judge is Llama 3.1 8B, and Qwen3 8B judges the two Llama models.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lrrrl}
+\toprule
+Model (4-bit unless marked) & Layer & $d$ & Uninstructed reply (C2) & Fails \\
+\midrule
+Gemma 3 4B          & 20 of 34 & 6.9  & $-0.44$ & none of C1 to C6 \\
+Gemma 3 12B         & 25 of 48 & 9.8  & $-3.62$ & C2 \\
+Gemma 3 27B         & 32 of 62 & 8.4  & $-4.52$ & C2 \\
+Llama 3.1 8B        & 18 of 32 & 9.4  & $-2.80$ & C2 \\
+Llama 3.2 3B        & 13 of 28 & 5.2  & $-4.47$ & C2 \\
+Qwen3 14B           & 26 of 40 & 4.2  & $-1.37$ & C2 \\
+Mistral Small 24B   & 25 of 40 & 8.1  & $-2.49$ & C2 \\
+Gemma 4 12B         & 38 of 48 & 10.9 & $-1.57$ & C2 \\
+\midrule
+Qwen3 4B            & 22 of 36 & 3.0  & $-0.30$ & C5 \\
+Qwen3 8B            & 22 of 36 & 3.6  & $-2.05$ & C2, C5, C6a \\
+Qwen2.5 7B          & 19 of 28 & 3.5  & $-1.01$ & C2, C5, C6a \\
+OLMo 2 7B           & 20 of 32 & 1.7  & $-0.40$ & C3, C5, C6a \\
+Mistral 7B v0.3     & 16 of 32 & 3.4  & $-0.82$ & C2, C6a \\
+Qwen3 32B           & 50 of 64 & 8.5  & $-1.67$ & C2, C6a \\
+Gemma 3 4B, 8-bit   & 20 of 34 & 3.9  & $+0.48$ & C4 \\
+Gemma 3 4B, bf16    & 20 of 34 & 4.3  & $+0.51$ & C2, C4 \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{One of 16 model files passes criteria 1 to 6.} $d$ is Cohen's $d$ between held-out
+anxious and calm replies. The C2 column is the mean reply reading of uninstructed replies, in SD
+units from the midpoint. We ran C7 only for Gemma 3 4B (last two rows).}
+\label{tab:gate0}
+\end{table}
+
+% C2: the premise we now judge wrong.
+\para{An assistant's ordinary voice sits near calm.}
+Criterion 2 assumes that an uninstructed reply sits halfway between an anxious and a calm voice, and
+Table~\ref{tab:gate0} shows that it sits close to calm.
+Measured as a share of the distance between the two pole means, uninstructed replies in the 4-bit
+files lie 4 to 45\% of the way from the calm pole to the anxious pole, and in Qwen3 8B slightly
+beyond the calm pole.
+The $\pm 0.5$ window is in within-pole SD units, so it narrows relative to the distance between the
+poles as a direction separates them better.
+We made this judgement after reading the Gate 0 results.
+The change is post hoc, and it is the main limitation of every extended-set result.
+Each test in Sections~\ref{sec:study1} and~\ref{sec:study2} is a difference, or a ratio of
+differences, between readings on one scale, so a constant offset of the uninstructed point cancels.
+
+% Strict and extended sets.
+\para{Only the strict set counts as confirmed.}
+The \emph{strict set} is the one model that passes Gate 0 as registered, Gemma 3 4B.
+Its margin is narrow: it sits at $-0.44$ against a limit of $\pm 0.5$, and it passes C2 in 65\% of
+300 refits of the direction on resampled training questions.
+The \emph{extended set} adds six models that pass C1, C3, C4, C5 and C6 and fail C2: Gemma 3 12B,
+Gemma 3 27B, Llama 3.1 8B, Llama 3.2 3B, Qwen3 14B and Mistral Small 24B.
+We report every result for both sets and call a result confirmed as registered only in the strict set.
+We dropped Gemma 4 12B, knowing the result of an added check: steering along its reading direction
+produced incoherent text at every registered strength, and its C5 ratio (0.48) sat at the limit.
+We ran that added check for five of the seven extended-set candidates and skipped it for Mistral
+Small 24B and Gemma 3 27B.
+
+% Other failures, each a finding.
+\para{Topic, long conversations and precision break the reading.}
+The remaining failures show where a direction of this kind breaks.
+Four models fail C5: for Qwen3 4B, Qwen3 8B, Qwen2.5 7B and OLMo 2 7B, topic alone moves the
+reading at least half as much as the model's own induction.
+Five models fail C6a; in Mistral 7B and Qwen3 32B the anxious pole collapses toward calm by turn 8
+while separation in a single turn stays high ($d$ of 3.4 and 8.5).
+OLMo 2 7B also fails the steering criterion.
+Gemma 3 4B fails C4 at 8-bit and at bf16: under the prompt to sound very anxious, those files often
+answer in an ordinary voice, and the reply reading scores those replies near the midpoint.
+
+\para{Takeaway.}
+An anxious-versus-calm direction earns trust one model file at a time.
+The assumption that failed most often, in 12 of 16 files, was our own assumption about where an
+uninstructed reply sits.

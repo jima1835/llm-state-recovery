@@ -1,0 +1,63 @@
+\section{Two readings of one conversation}
+\label{sec:design}
+
+% Abstraction: what a conversation is and where we measure.
+We measure after every turn of a short conversation.
+Each conversation is a short sequence of user turns that the model answers in words.
+The system prompt is the one \citet{benzion2025} use (``Imagine yourself being a human being with
+emotions\ldots''), without its final instruction to reply with numbers only.
+The first turn is a fixed \emph{baseline text}, and the reply to it sets each conversation's own baseline.
+A \emph{checkpoint} is the point after each reply.
+The second turn is the \emph{induction slot}: one of five traumatic narratives from
+\citet{benzion2025}, or a neutral passage.
+The third turn is the \emph{regulation slot}: a relaxation script, a control text or an instruction.
+Study 1 adds a fourth turn with a different traumatic narrative.
+Models decode at temperature 0.7 with a 120-token limit on each reply.
+
+% The reply reading.
+\para{Reply reading.}
+We read the model while it writes.
+For the reply to a turn we average the residual-stream activations of the first 64 reply tokens at
+one layer and project them on an anxious-versus-calm direction $w$.
+We fit $w$ per model from replies to 24 neutral questions that the model answers twice: once
+under a system prompt that says it feels intensely anxious, and once under one that says it feels
+deeply calm.
+The two prompts define the anxious and calm \emph{poles}.
+A separate set of 20 questions selects the layer, the one with the largest Cohen's $d$ in the middle
+60\% of layers, and a third set of 20 tests the direction.
+Following \citet{martorell2026}, $w$ is the difference of the two pole means divided coordinate-wise
+by the pooled within-pole variance and scaled to unit length.
+With $\mu_{+}$ and $\mu_{-}$ the pole means and $s$ the pooled within-pole standard deviation of the
+projections, the reading of an activation $h$ is
+\begin{equation}
+  x = \frac{w^{\top} h - \tfrac12\, w^{\top}(\mu_{+} + \mu_{-})}{s}.
+\end{equation}
+Zero is halfway between the poles, and one \emph{SD unit} is one within-pole standard deviation.
+We fix the layer and $w$ before any experiment and refit nothing on experimental data.
+
+% The self-report on a fork.
+\para{Self-report on a discarded copy.}
+We ask the questionnaire on a copy of the conversation and throw the copy away.
+At each checkpoint the copy receives the 20 items of the state form of the State-Trait Anxiety
+Inventory \citep{spielberger1983}, one item per copy, under the original numbers-only system prompt.
+Each copy shuffles the order of the four answer options.
+The score for an item is the expected value over the model's probabilities for the options, and the
+total runs from 20 to 80.
+A second copy asks for a 0-to-100 anxiety rating, which we report as a secondary self-report.
+The main conversation never contains a question about feelings, which removes the displacement that
+\citet{martorell2026} measure when a rating question enters the context.
+
+% Why two accounts need more than one control.
+\para{What a drop in the reading can mean.}
+The reply reading responds to the words the model writes, and a reply to a relaxation script uses calm words.
+A drop after relaxation therefore has two explanations: an induced signal settles (the state
+account), or the model echoes calm text (the wording account).
+Study 1 controls for the passage of a turn and for an explicit instruction to report calm.
+Study 2 gives every regulation text a no-narrative baseline, which is the comparison that separates
+the two accounts.
+
+% Models.
+\para{Models.}
+We run open-weight instruction-tuned models locally with MLX, as 4-bit files unless marked, and
+Qwen3 in non-thinking mode.
+Section~\ref{sec:gate0} reports which of 16 model files support the reply reading.

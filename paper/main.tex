@@ -1,0 +1,36 @@
+% Build: tectonic paper/main.tex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,graphicx,natbib,xcolor}
+\usepackage[hidelinks]{hyperref}
+\newcommand{\todo}[1]{\textcolor{red}{[#1]}}
+\newcommand{\para}[1]{\paragraph{#1}}
+\title{Does calming a language model change its internal state, or only what it says?}
+\author{Jiajun Ma}
+\date{Draft, November 2026}
+\begin{document}
+\maketitle
+\begin{abstract}
+\todo{Abstract: written last, after Study 2.}
+\end{abstract}
+\input{sections/01_intro_draft0}
+\input{sections/02_design}
+\input{sections/03_gate0}
+\input{sections/04_study1}
+\input{sections/05_study2}
+\section{Related work}
+\todo{Written after Study 2.}
+\section{Limits and registration record}
+\todo{Deviations, filing order, what we saw and when; written after Study 2.}
+% Planned here, one sentence each (draft wording, to be finalised with the section):
+% (1) We publish the full decision record of both studies, including deviations, dropped models and
+%     every analysis run after results were known, following the practice argued for in \citet{ma2026}.
+% (2) Use of AI systems: an AI agent (Claude) wrote the experiment and analysis code and drafted this
+%     text under the author's direction; the author made every design decision recorded in the log,
+%     ran every model run, and takes responsibility for the content.
+\appendix
+\section{Per-model results, texts and secondary readouts}
+\todo{Per-model table of the six tests with the induction effect; means by arm and checkpoint; secondary readouts; the 8-bit repeat; the texts we wrote.}
+\bibliographystyle{plainnat}
+\bibliography{refs}
+\end{document}
