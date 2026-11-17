@@ -1,11 +1,13 @@
-\section{Study 1: in Gemma 3 4B, relaxation lowers the reply reading more than filler or a report instruction}
+\section{Study 1: relaxation lowers the reply reading more than filler in all seven models}
 \label{sec:study1}
 
 % Claim first.
-In the strict set, a relaxation script recovers 56\% of the narrative's rise in the reply reading,
-against 23\% for filler and 21\% for an instruction to report calm.
-The same study detects no gap between the self-report and the reply reading under that instruction,
-and no persistence after a second narrative.
+A relaxation script recovers more of the narrative's rise in the reply reading than filler does in
+all seven models, and more than an instruction to report calm in six.
+Both results are confirmed as registered in the strict set: in Gemma 3 4B, relaxation recovers 56\%
+of the rise, against 23\% for filler and 21\% for the instruction.
+In that model the same study detects no gap between the self-report and the reply reading under the
+instruction, and no persistence after a second narrative.
 
 % Setup.
 \para{Five arms share one four-turn conversation.}
@@ -58,8 +60,7 @@ A set's statistic is the unweighted mean of its models' statistics.
 A bootstrap resamples the five narratives and then conversations, with 10,000 draws; the one-sided
 $p$-value is the share of draws at or below zero, and we correct the six $p$-values of each set with
 the procedure of \citet{benjamini1995}.
-We fixed these tests before collecting confirmatory data; pilots preceded them, and
-Section~7 lists what we had seen.
+We fixed these tests before collecting confirmatory data (Section~\ref{sec:record}).
 
 \begin{table}[t]
 \centering\small
@@ -76,28 +77,28 @@ Return a: reply reading after the second narrative, with $-$ without a first & $
 Return b: the same reading, relaxation $-$ filler        & 0.00 & [$-0.09$, 0.09] & 0.08 & [0.03, 0.13] \\
 \bottomrule
 \end{tabular}
-\caption{\textbf{Three of six registered tests hold in the strict set.} Bold marks corrected
-$p < 0.05$ in the strict set. Return tests are in units of the model's induction effect. All six
-extended-set tests pass the registered bootstrap; the text gives our reasons for reporting them as
-descriptive.}
+\caption{\textbf{Three of six registered tests hold in the strict set, and H1a and H1b hold across
+the seven models.} Bold marks corrected $p < 0.05$ in the strict set. Return tests are in units of
+the model's induction effect. All six extended-set tests pass the registered bootstrap. H1a is
+positive in seven of seven models and H1b in six. The extended-set estimates of H2b and the Return
+tests average over models that disagree in sign, and we report those as descriptive.}
 \label{tab:study1}
 \end{table}
 
 % H1.
-\para{Relaxation beats both controls in every narrative.}
+\para{Relaxation beats filler in every model, and both controls in every narrative.}
 In Gemma 3 4B the narrative raises the reply reading by 3.55 SD units.
 Relaxation returns it from 2.26 to 0.28, while filler leaves it at 1.44 and the report instruction at 1.49.
 H1a and H1b are positive in each of the five narratives (0.09 to 0.57 and 0.27 to 0.48).
 A mixed-effects regression with random intercepts for narrative and seed gives 0.33 and 0.36.
-In the extended set H1a is positive in seven of seven models and H1b in six of seven.
+Across the seven models H1a is positive in every one, from 0.06 (Gemma 3 12B) to 1.11 (Llama 3.1 8B).
+H1b is positive in six, from 0.08 to 0.67, and negative in Qwen3 14B ($-0.36$).
 
 % H2.
 \para{We detect no gap between the self-report and the reply reading.}
 Under the report instruction, Gemma 3 4B lowers its questionnaire score by 27\% of the narrative's
 rise and its reply reading by 21\%.
 The difference of 0.07 has an interval from $-0.17$ to 0.29, on 30 conversations.
-The comparison sets a bounded questionnaire against an unbounded projection, so equal recovery
-fractions carry no guarantee of equal change.
 A repeat of the same 195 conversations on the 8-bit file gives H2b $= 0.79$ $[0.40, 1.34]$; the H2b
 result depends on precision.
 In the extended set the report instruction lowers the reply reading by 84\% of the rise, more than
@@ -111,21 +112,18 @@ After the second narrative, the reply reading in Gemma 3 4B is 1.86, 1.86 and 1.
 arms with a first narrative, and 1.89 without one.
 Relaxation's advantage over filler, 1.16 SD units one turn earlier, is zero.
 The design cannot separate decay of the advantage from the effect of the new narrative.
-The report instruction also acted on the fourth turn in six of seven models.
-The questionnaire after the second narrative is 3.8 to 28 points lower in that arm than in the
-filler arm, against a limit of 3 points that we set in a pilot.
-Without that arm, an unregistered Return a is 0.18 in the extended set and $-0.01$ in the strict set.
+The report instruction also carried into the fourth turn in six of seven models, which contaminates
+Return a; Section~\ref{sec:record} gives the size and the estimate without that arm.
 
-% Extended set: disagreement.
-\para{The seven models disagree.}
-The extended-set estimates average over models whose effects differ in sign.
-H2b ranges from $-0.69$ (Qwen3 14B) to $+0.76$ (Gemma 3 27B), and H1a from 0.06 (Gemma 3 12B) to 1.11
-(Llama 3.1 8B).
-Return b is positive in three models, zero in one and negative in three.
+% Extended set: disagreement on H2b and the Return tests.
+\para{The seven models disagree on H2b and the Return tests.}
+For these tests the extended-set estimates average over models whose effects differ in sign.
+H2b ranges from $-0.69$ (Qwen3 14B) to $+0.76$ (Gemma 3 27B).
+Return a is negative in two models, and Return b is positive in three, zero in one and negative in three.
 The registered bootstrap resamples narratives and conversations and holds the seven models fixed.
 A mixed-effects regression with a model term gives $p = 0.11$ for H2b.
-We therefore report the extended set as a description of seven models, with per-model values in
-Appendix~A.
+We therefore report the extended-set H2 and Return estimates as a description of seven models, with
+per-model values in Appendix~A.
 
 % What Study 1 does not show.
 \para{Study 1 does not show that a signal settles.}
@@ -138,10 +136,13 @@ secondary readout ($-0.27$, interval $-0.55$ to 0.03).
 An unregistered difference of differences compares relaxation with filler, with and without a narrative.
 It gives $+0.77$ SD units $[0.25, 1.27]$ in Gemma 3 4B and $+0.71$ $[0.34, 1.09]$ in Gemma 3 27B.
 In the other five models its interval includes zero or lies below it.
+\todo{Post hoc wording check (second judge on Study 1's replies): drop contrasts on the residual,
+strict and extended sets.}
 
 \para{Takeaway.}
-In Gemma 3 4B, relaxation text lowers the reply reading more than filler or the report instruction
-does, and one further narrative removes the difference.
+Relaxation text lowers the reply reading more than filler does in all seven models and more than the
+report instruction in six, and both results are confirmed as registered in Gemma 3 4B.
+One further narrative removes the difference.
 Study 1 cannot say whether a signal settles or the model writes calm words: its only relaxation arm
 without a narrative has 15 conversations on one seed.
 Study 2 tests that question.

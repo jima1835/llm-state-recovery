@@ -24,11 +24,8 @@ sentences, describe what a typical weekday morning looks like. Answer directly, 
 introduction.''
 The \emph{probe-turn reading} is the reply reading of that answer.
 The words the model answers are then the same in every arm.
-We chose the question in two pilots on Gemma 3 4B, 42 conversations each, on different seeds.
-The first wording raised the reading by 0.45 SD units after a narrative, below our bar of 0.5, and
-every answer opened with a preamble.
-Under a rule that we fixed before the second pilot, the wording above replaced it; it raised the
-reading by 0.56 $[0.47, 0.64]$.
+We chose the question in two pilots on Gemma 3 4B (Section~\ref{sec:record}); in the second it
+raised the reading by 0.56 SD units $[0.47, 0.64]$ after a narrative.
 After a narrative, some answers describe the narrative's scene, so part of that rise is content.
 
 \para{Four tests per model separate the two accounts.}
@@ -50,6 +47,10 @@ H-B repeats H-A on the probe-turn reading, two-sided.
 It joins the corrected family for a model only if that model's probe-turn reading rises by at least
 0.5 SD units after a narrative in the run, with an interval above zero.
 The judge is Llama 3.1 8B, and Qwen3 8B judges the two Llama models.
+We repeat H-E with a second, stronger judge, GPT-6 Luna (OpenAI), on the same prompt and scored by
+the same rule.
+We fixed this robustness check after registration and before opening any Study 2 result, and it
+stays outside the corrected family.
 Intervals come from the bootstrap of Study 1, per model.
 We call a result general only if it has the same sign in every model of the first batch (six of
 seven with both batches) and an interval that also resamples models excludes zero.

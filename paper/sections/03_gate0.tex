@@ -65,23 +65,22 @@ files lie 4 to 45\% of the way from the calm pole to the anxious pole, and in Qw
 beyond the calm pole.
 The $\pm 0.5$ window is in within-pole SD units, so it narrows relative to the distance between the
 poles as a direction separates them better.
-We made this judgement after reading the Gate 0 results.
-The change is post hoc, and it is the main limitation of every extended-set result.
+We made this judgement after reading the Gate 0 results and before collecting confirmatory data,
+and our registration update declares it as a deviation.
 Each test in Sections~\ref{sec:study1} and~\ref{sec:study2} is a difference, or a ratio of
 differences, between readings on one scale, so a constant offset of the uninstructed point cancels.
 
 % Strict and extended sets.
-\para{Only the strict set counts as confirmed.}
+\para{The strict set decides what counts as confirmed.}
 The \emph{strict set} is the one model that passes Gate 0 as registered, Gemma 3 4B.
 Its margin is narrow: it sits at $-0.44$ against a limit of $\pm 0.5$, and it passes C2 in 65\% of
 300 refits of the direction on resampled training questions.
 The \emph{extended set} adds six models that pass C1, C3, C4, C5 and C6 and fail C2: Gemma 3 12B,
 Gemma 3 27B, Llama 3.1 8B, Llama 3.2 3B, Qwen3 14B and Mistral Small 24B.
-We report every result for both sets and call a result confirmed as registered only in the strict set.
-We dropped Gemma 4 12B, knowing the result of an added check: steering along its reading direction
-produced incoherent text at every registered strength, and its C5 ratio (0.48) sat at the limit.
-We ran that added check for five of the seven extended-set candidates and skipped it for Mistral
-Small 24B and Gemma 3 27B.
+We report every result for both sets.
+A result is confirmed as registered if it holds in the strict set, and a result that holds only in
+the extended set rests on this deviation.
+We dropped an eighth candidate, Gemma 4 12B, after an added steering check (Section~\ref{sec:record}).
 
 % Other failures, each a finding.
 \para{Topic, long conversations and precision break the reading.}

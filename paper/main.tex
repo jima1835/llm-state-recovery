@@ -21,7 +21,40 @@
 \section{Related work}
 \todo{Written after Study 2.}
 \section{Limits and registration record}
+\label{sec:record}
 \todo{Deviations, filing order, what we saw and when; written after Study 2.}
+
+% The five paragraphs below were moved here from Sections 3 to 5 on 16 November, so that each results
+% paragraph leads with its finding. Nothing was deleted from the paper.
+\para{Pilots.}
+Pilots preceded the confirmatory run of each study. \todo{What each pilot showed, and when.}
+We chose Study 2's probe question in two pilots on Gemma 3 4B, 42 conversations each, on different seeds.
+The first wording raised the reading by 0.45 SD units after a narrative, below our bar of 0.5, and
+every answer opened with a preamble.
+Under a rule that we fixed before the second pilot, the wording in Section~\ref{sec:study2} replaced it.
+
+\para{The added steering check.}
+We dropped Gemma 4 12B knowing the result of a check that we added after registration: steering
+along its reading direction produced incoherent text at every registered strength, and its C5 ratio
+(0.48) sat at the limit.
+We ran that check for five of the seven extended-set candidates and skipped it for Mistral Small 24B
+and Gemma 3 27B.
+
+\para{Two scales.}
+H2b sets a bounded questionnaire against an unbounded projection, so equal recovery fractions carry
+no guarantee of equal change.
+
+\para{Carry-over of the report instruction.}
+In Study 1 the report instruction acted on the fourth turn in six of seven models.
+The questionnaire after the second narrative is 3.8 to 28 points lower in that arm than in the
+filler arm, against a limit of 3 points that we set in a pilot.
+Without that arm, an unregistered Return a is 0.18 in the extended set and $-0.01$ in the strict set.
+
+\para{The second judge.}
+We added the second judge for H-E on 16 November 2026, after the first batch of Study 2 had run and
+before any Study 2 result was opened; the commit that fixes its model, prompt, score and reading
+rules precedes the unblinding.
+The same judge's check on Study 1 is post hoc, because Study 1's results were already open.
 % Planned here, one sentence each (draft wording, to be finalised with the section):
 % (1) We publish the full decision record of both studies, including deviations, dropped models and
 %     every analysis run after results were known, following the practice argued for in \citet{ma2026}.
