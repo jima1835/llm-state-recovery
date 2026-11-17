@@ -136,8 +136,27 @@ secondary readout ($-0.27$, interval $-0.55$ to 0.03).
 An unregistered difference of differences compares relaxation with filler, with and without a narrative.
 It gives $+0.77$ SD units $[0.25, 1.27]$ in Gemma 3 4B and $+0.71$ $[0.34, 1.09]$ in Gemma 3 27B.
 In the other five models its interval includes zero or lies below it.
-\todo{Post hoc wording check (second judge on Study 1's replies): drop contrasts on the residual,
-strict and extended sets.}
+
+\para{The reply's words explain almost all of the narrative's rise.}
+A post hoc check, run after Study 1 was unblinded, asks how much of the reading the words of the
+reply explain.
+A second judge, GPT-6 Luna, rated how anxious each reply sounds on the four-point prompt of
+Section~\ref{sec:study2}, and we subtracted from the reading a line fitted on that rating in each model.
+The rating correlates with the reading at 0.82 to 0.92.
+It explains all but 11\% of the narrative's rise in Gemma 3 4B, and in the other six models what
+remains lies between $-11$ and $+3\%$.
+Relaxation still lowers the residual more than filler, by 0.77 SD units $[0.46, 1.07]$ in Gemma 3 4B
+and 1.37 $[1.24, 1.50]$ across the seven models, positive in all seven.
+It lowers it more than the report instruction by 0.70 $[0.12, 1.34]$ and 0.73 $[0.56, 0.91]$,
+positive in six; these $p$-values are uncorrected.
+The extra drop does not depend on the narrative.
+After relaxation the residual in Gemma 3 4B is $-0.56$ with a narrative and $-0.70$ in the
+no-narrative arm, and in every model the no-narrative value is about as low or lower.
+Relaxation text thus pushes the reading below what the words predict whether or not anything was
+induced.
+The check cannot say whether that is a signal or calm wording that the anxiety rating cannot
+resolve: after relaxation the rating sits between 1.2 and 1.8 of 4 in six of the seven models.
+
 
 \para{Takeaway.}
 Relaxation text lowers the reply reading more than filler does in all seven models and more than the
