@@ -29,3 +29,8 @@ paper/project_context.md
 # Local reference PDFs (own and others' papers); not for the public repo
 input/
 .tectonic-cache/
+
+# arXiv package: built by scripts/arxiv_pack.py from paper/, never edited by hand
+arxiv/
+arxiv.tar.gz
+arxiv-preview.pdf
