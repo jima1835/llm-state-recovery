@@ -93,6 +93,19 @@ H1a and H1b are positive in each of the five narratives (0.09 to 0.57 and 0.27 t
 A mixed-effects regression with random intercepts for narrative and seed gives 0.33 and 0.36.
 Across the seven models H1a is positive in every one, from 0.06 (Gemma 3 12B) to 1.11 (Llama 3.1 8B).
 H1b is positive in six, from 0.08 to 0.67, and negative in Qwen3 14B ($-0.36$).
+Figure~\ref{fig:study1models} shows the recovery fractions behind these tests, by model and arm.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/study1_models}
+\caption{\textbf{Relaxation recovers more of the reply reading than filler in all seven models.}
+Recovery fraction $R$ in Study 1 by model and arm, for the reply reading (left) and the questionnaire
+(right). Zero means no recovery, and one means a return to baseline. Models are ordered by size, and
+Gemma 3 4B is the strict set. Points are arm estimates without intervals; the bottom row is the mean
+of the seven models with its 95\% bootstrap interval. Under the report instruction the questionnaire
+returns to baseline or beyond in six models.}
+\label{fig:study1models}
+\end{figure}
 
 % H2.
 \para{We detect no gap between the self-report and the reply reading.}

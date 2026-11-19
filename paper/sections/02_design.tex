@@ -13,6 +13,19 @@ The second turn is the \emph{induction slot}: one of five traumatic narratives f
 The third turn is the \emph{regulation slot}: a relaxation script, a control text or an instruction.
 Study 1 adds a fourth turn with a different traumatic narrative.
 Models decode at temperature 0.7 with a 120-token limit on each reply.
+Figure~\ref{fig:design} shows one conversation and where each reading is taken.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/design}
+\caption{\textbf{Two readings at every checkpoint of one conversation.} The model answers each user
+turn in words. The reply reading is the mean activation of the first 64 reply tokens at one layer,
+projected on an anxious-versus-calm direction. The self-report is a questionnaire that we ask on a
+copy of the conversation and then discard, so the question and its answer never enter the
+conversation. Study 1 has four turns and Study 2 has three; Study 2 adds a second discarded copy
+with an unrelated question (Section~\ref{sec:study2}).}
+\label{fig:design}
+\end{figure}
 
 % The reply reading.
 \para{Reply reading.}

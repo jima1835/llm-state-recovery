@@ -3,7 +3,8 @@
     .venv/bin/python scripts/arxiv_pack.py          # writes arxiv/, arxiv.tar.gz, arxiv-preview.pdf
 
 Rebuild after every paper edit; never edit arxiv/ by hand. What it does:
-  1. Copies only main.tex, sections/*.tex, tables/*.tex (never project_context.md, formulas.*, PDFs, .claude/).
+  1. Copies only main.tex, sections/*.tex, tables/*.tex and figures/*.pdf (never project_context.md,
+     formulas.*, other PDFs, .claude/).
   2. Strips LaTeX comments, since arXiv publishes the source. A comment-only line is removed; a trailing
      comment is cut back to a bare "%" so line-end spacing is unchanged. "\\%" is kept.
   3. Adds \\pdfoutput=1 in the first lines (arXiv's pdflatex hint; guarded so tectonic still builds).
@@ -40,6 +41,11 @@ def sources() -> list[Path]:
     return files
 
 
+def figures() -> list[Path]:
+    """Figure PDFs written by scripts/make_figures.py; copied as they are."""
+    return sorted((PAPER / "figures").glob("*.pdf"))
+
+
 def strip_comments(text: str) -> str:
     out = []
     for line in text.splitlines():
@@ -65,7 +71,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         # 1. Build the original once to get the .bbl
         build = Path(tmp) / "orig"
-        for f in sources() + [PAPER / "refs.bib"]:
+        for f in sources() + figures() + [PAPER / "refs.bib"]:
             dest = build / f.relative_to(PAPER)
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(f, dest)
@@ -86,6 +92,10 @@ def main() -> int:
             dest = OUT / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text(text)
+        for f in figures():
+            dest = OUT / f.relative_to(PAPER)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(f, dest)
         shutil.copy2(build / "main.bbl", OUT / "main.bbl")
 
         # 3. Check the shipped .bbl covers every citation the build records (bibitems may wrap lines)

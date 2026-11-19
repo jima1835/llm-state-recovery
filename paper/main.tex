@@ -2,9 +2,12 @@
 \documentclass[11pt]{article}
 \usepackage[margin=1in]{geometry}
 \usepackage{amsmath,amssymb,booktabs,graphicx,natbib,xcolor}
-\usepackage[hidelinks]{hyperref}
+\definecolor{linkblue}{RGB}{0,51,153}
+\usepackage[colorlinks=true,allcolors=linkblue]{hyperref}
 \newcommand{\todo}[1]{\textcolor{red}{[#1]}}
 \newcommand{\para}[1]{\paragraph{#1}}
+% Clickable DOIs in the reference list (plainnat only \providecommand's \doi, so this one is used).
+\newcommand{\doi}[1]{\href{https://doi.org/#1}{doi:\,#1}}
 \title{Does calming a language model change its internal state, or only what it says?}
 \author{Jiajun Ma}
 \date{Draft, November 2026}
@@ -23,13 +26,14 @@
 % against its source in the Thursday reference pass; the search dates are updated after Thursday's search.
 
 \para{Induced affect and its regulation, read from the model's answers.}
-\citet{codaforno2023} showed that prompts written to induce anxiety raise a model's score on an
+\citet{codaforno2024} showed that prompts written to induce anxiety raise a model's score on an
 anxiety questionnaire and increase its biases.
 \citet{benzion2025} moved the paradigm to clinical material: traumatic narratives raised GPT-4's
 score on the state form of the STAI from 30.8 to 67.8, relaxation exercises lowered it to 44.4, and
 the authors called for the comparison to be repeated across models.
 \citet{wekenborg2026} induced seven affective states in GPT-4o and five open-weight models, found
-that a mindfulness-based relaxation step lowered the ratings again, and proposed language models as
+that regulation prompts, a mindfulness-based breathing exercise for six of the states, lowered the
+ratings again, and proposed language models as
 experimental systems for human psychopathology; later work carries induced anxiety into the
 consumer decisions of agents \citep{benzion2025agents}, and \citet{ho2026} ask whether induced
 emotion biases sequential decisions.
@@ -42,7 +46,8 @@ activations, an instruction arm, and a no-narrative baseline for every regulatio
 \citet{martorell2026} compare numeric self-reports of four affective states with linear probes in
 eight open-weight models over ten-turn conversations: a rating question displaces the probed state
 by a median of 3.1 SD, the rating tracks the probe after the question far better than before it, and
-neither property improves with size from 1B to 27B parameters.
+neither the coupling before the question nor the rating's specificity to its own concept improves
+with size from 1B to 27B parameters.
 Our reading uses their probe construction, and our questionnaire, like their rating question, stays
 out of the main conversation.
 Their conversations are observational, and they note that their probes may measure expressed
@@ -53,7 +58,15 @@ Sections~\ref{sec:study1} and~\ref{sec:study2}.
 A second group of studies sets the state by steering instead of text: \citet{ferrara2026} injects a
 pain direction that the model does not name, and \citet{berg2026} report a hidden valence that
 persists and shapes later choices.
+An anonymous submission to ICLR 2027 reports a related disparity for valence: emotions injected into
+seven models are decoded with 99.5 to 100\% accuracy, yet Qwen3.5-9B endorses negative labels in only
+5.9\% of comparisons, against 91.9\% for positive ones, a preference that the authors show is largely
+present before any injection (1.9\% and 93.1\%) \citep{anonymous2026valence}.
 We set the state with text that a user could send, which is the setting of the clinical studies above.
+\citet{santana2026} also intervene with text, in Qwen3.5-4B after a broken tool has made it fail
+repeatedly, and separate a message's relational structure from its first-person register with a
+scrambled control and a factorial: the emotion probes follow the structure alone, while behaviour
+changes only when both are present.
 
 \para{Emotion representations and what a direction represents.}
 \citet{sofroniew2026} find representations of emotion concepts in Claude Sonnet 4.5 that causally
@@ -130,6 +143,14 @@ No part of the pipeline has been reimplemented independently, and a reader shoul
 with that in mind.
 We publish the decision record of both studies with the code, including deviations, dropped models
 and every analysis run after results were known, following \citet{ma2026}.
+The author verified the content and takes responsibility for all of it.
+No AI system is cited as a source.
+
+% Drafted 19 November after the author's AAAI paper (ma2026); Jiajun to confirm the wording.
+\para{Acknowledgments.}
+This is an independent personal project, produced in the author's personal capacity.
+It is not affiliated with, sponsored by, or endorsed by any employer or institution.
+We thank \citet{benzion2025} for releasing their narratives and relaxation scripts under an open license.
 % Planned here, one sentence each (draft wording, to be finalised with the section):
 % (1) We publish the full decision record of both studies, including deviations, dropped models and
 %     every analysis run after results were known, following the practice argued for in \citet{ma2026}.
