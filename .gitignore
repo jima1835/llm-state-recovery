@@ -18,6 +18,7 @@ runs/*
 third_party/
 input-lit-review/
 HANDOFF.md
+LEDGER.md
 .claude/
 
 # Local chat page: its own nested repository (see chat/README.md)
@@ -34,3 +35,6 @@ input/
 arxiv/
 arxiv.tar.gz
 arxiv-preview.pdf
+
+# arXiv check reports (scripts/arxiv_check.py)
+arxiv-check/

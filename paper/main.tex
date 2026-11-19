@@ -19,7 +19,60 @@
 \input{sections/04_study1}
 \input{sections/05_study2}
 \section{Related work}
-\todo{Written after Study 2.}
+% Drafted 18 November from the PDFs in input-lit-review/ and the bib notes. Each sentence is checked
+% against its source in the Thursday reference pass; the search dates are updated after Thursday's search.
+
+\para{Induced affect and its regulation, read from the model's answers.}
+\citet{codaforno2023} showed that prompts written to induce anxiety raise a model's score on an
+anxiety questionnaire and increase its biases.
+\citet{benzion2025} moved the paradigm to clinical material: traumatic narratives raised GPT-4's
+score on the state form of the STAI from 30.8 to 67.8, relaxation exercises lowered it to 44.4, and
+the authors called for the comparison to be repeated across models.
+\citet{wekenborg2026} induced seven affective states in GPT-4o and five open-weight models, found
+that a mindfulness-based relaxation step lowered the ratings again, and proposed language models as
+experimental systems for human psychopathology; later work carries induced anxiety into the
+consumer decisions of agents \citep{benzion2025agents}, and \citet{ho2026} ask whether induced
+emotion biases sequential decisions.
+Every measurement in this line is an answer that the model gives, and \citet{wekenborg2026}
+themselves caution that such scores are proxies for output patterns elicited by prompts.
+We keep the narratives, relaxation scripts and filler of \citet{benzion2025} and add a reading of
+activations, an instruction arm, and a no-narrative baseline for every regulation text.
+
+\para{Self-report against an internal measure.}
+\citet{martorell2026} compare numeric self-reports of four affective states with linear probes in
+eight open-weight models over ten-turn conversations: a rating question displaces the probed state
+by a median of 3.1 SD, the rating tracks the probe after the question far better than before it, and
+neither property improves with size from 1B to 27B parameters.
+Our reading uses their probe construction, and our questionnaire, like their rating question, stays
+out of the main conversation.
+Their conversations are observational, and they note that their probes may measure expressed
+affect, were trained on single turns, and were run at 4-bit precision only.
+We manipulate the reading with an induction and a regulation step, and we test each of those three
+limits: criteria 6 and 7 in Section~\ref{sec:gate0}, and the wording checks in
+Sections~\ref{sec:study1} and~\ref{sec:study2}.
+A second group of studies sets the state by steering instead of text: \citet{ferrara2026} injects a
+pain direction that the model does not name, and \citet{berg2026} report a hidden valence that
+persists and shapes later choices.
+We set the state with text that a user could send, which is the setting of the clinical studies above.
+
+\para{Emotion representations and what a direction represents.}
+\citet{sofroniew2026} find representations of emotion concepts in Claude Sonnet 4.5 that causally
+influence its outputs, and they stress that these track the emotion concept operative at a token
+position and do not imply experience.
+Emotion vectors can also be extracted and steered in small open-weight models, where the steering
+regime depends on architecture more than on scale \citep{jeong2026}, and their geometry is shared
+across sizes and across base and instruction-tuned variants of one family \citep{hollowell2026};
+\citet{lee2025} argue that network-structured computations of psychopathology emerge in language
+models and grow denser with size.
+Two of these results bear on what our reading can mean.
+\citet{soligo2026} trace Gemma's expressions of distress to post-training, and our only fully
+validated file is a Gemma.
+\citet{li2026} ask what a steerable valence direction represents, which is the question that
+Gate 0 and the wording checks put to an anxious-versus-calm direction.
+
+\para{What we found no precedent for.}
+We searched arXiv, OpenReview and PsyArXiv on 12, 15 and 16 November 2026 for a study that reads an
+activation direction through an induction and a regulation step, and found none.
 \section{Limits and registration record}
 \label{sec:record}
 \todo{Deviations, filing order, what we saw and when; written after Study 2.}
@@ -55,6 +108,28 @@ We added the second judge for H-E on 16 November 2026, after the first batch of 
 before any Study 2 result was opened; the commit that fixes its model, prompt, score and reading
 rules precedes the unblinding.
 The same judge's check on Study 1 is post hoc, because Study 1's results were already open.
+
+% Drafted 18 November. Jiajun to confirm three statements before submission: (a) the number check of
+% the final text was done, (b) nothing was reimplemented independently, (c) the record goes public.
+\para{Study 2 is pre-specified, not registered.}
+Study 1 is registered on OSF, and Study 2 is not.
+Its plan, configuration, analysis code and tests were committed and pushed to the project
+repository on 15 November 2026 at 12:07 PST (commit b9c2b7d), in the minute before the
+first conversation ran.
+The author sets a commit's date, so this record is weaker than a registry's.
+
+\para{Use of AI systems.}
+An AI agent (Claude, Anthropic) wrote the experiment harness and the analysis code and drafted this
+text under the author's direction.
+The author made every design decision recorded in the log, started every model run and opened every result.
+The analysis code of each study was written and tested on synthetic data before that study's results
+were opened, and every number in the text was checked against the analysis output.
+Two language models also serve as instruments: Llama 3.1 8B, with Qwen3 8B for the Llama models, is
+the registered judge, and GPT-6 Luna is the second judge.
+No part of the pipeline has been reimplemented independently, and a reader should weigh the results
+with that in mind.
+We publish the decision record of both studies with the code, including deviations, dropped models
+and every analysis run after results were known, following \citet{ma2026}.
 % Planned here, one sentence each (draft wording, to be finalised with the section):
 % (1) We publish the full decision record of both studies, including deviations, dropped models and
 %     every analysis run after results were known, following the practice argued for in \citet{ma2026}.
