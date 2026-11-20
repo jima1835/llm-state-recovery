@@ -110,6 +110,13 @@ Medicine*), released under the MIT license. The probe construction and the idea 
 question out of the conversation follow Martorell & Bianchi (2026, arXiv:2603.18893). The paper's
 related-work section gives the full list.
 
+## Licences
+
+The code in this repository is under the MIT licence ([LICENSE](LICENSE)). The data record has its own
+licence, stated on its Zenodo page. Third-party texts keep their licences
+([prompts/SOURCES.md](prompts/SOURCES.md)), and model replies remain subject to the terms of the
+models that produced them.
+
 ## Record and disclosure
 
 Study 1 is registered on OSF. Study 2 is pre-specified in this repository, committed before its
