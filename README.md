@@ -112,8 +112,8 @@ related-work section gives the full list.
 
 ## Record and disclosure
 
-Study 1 is registered on OSF. Study 2 is pre-specified in this repository (commit `b9c2b7d`, before
-its first conversation ran) and is not on a registry. Every analysis run after results were open is
+Study 1 is registered on OSF. Study 2 is pre-specified in this repository, committed before its
+first conversation ran, and is not on a registry. Every analysis run after results were open is
 labelled post hoc in the paper and logged in `TRACKING.md`.
 
 An AI system (Claude, Anthropic) was used to implement the experiment and analysis code and to draft
