@@ -1,61 +1,84 @@
-% DRAFT 0. A scaffold that sets guardrails for the results sections. We rewrite it from scratch
-% once Study 2 is in; it promises only what Sections 3 to 5 deliver.
 \section{Introduction}
+\label{sec:intro}
 
-% Stakes: who relies on asking the model, and what a calming prompt is supposed to do.
-Researchers who study distress in language models ask the model how it feels.
-\citet{benzion2025} gave GPT-4 traumatic narratives, measured its answers to a state-anxiety
-questionnaire, and found that relaxation exercises lowered the reported score.
-The evidence that the exercises calm the model is a questionnaire answer.
+% Scene: why induced "anxiety" in a language model is studied at all.
+Language models have found their way into mental-health care, as chatbots that deliver therapeutic
+techniques and as tools in clinical research, and how they respond to emotional content has become a
+question in its own right \citep{benzion2025}.
+\citet{codaforno2024} showed that prompts written to induce anxiety raise a model's score on an
+anxiety questionnaire and increase its biases, so a model's ``state'' within a conversation can
+change how it treats the person it is talking to.
+\citet{benzion2025} carried this paradigm to clinical material: traumatic narratives raised GPT-4's
+score on the state form of the State-Trait Anxiety Inventory from 30.8 to 67.8, and mindfulness-based
+relaxation exercises lowered it to 44.4.
+\citet{wekenborg2026} found the same pattern for seven affective states in six models and proposed
+language models as experimental systems for human psychopathology.
 
-% Problem gap: structural, not quantitative.
-A questionnaire answer cannot show what a calming prompt changes, for two structural reasons.
-First, asking disturbs what it measures: \citet{martorell2026} show that a rating question displaces
-the probed signal and that the rating tracks the signal only weakly before the question.
-Second, a model can hold a signal that it never reports: \citet{ferrara2026} injects a pain direction
-that probes separate from sadness with 98 to 100\% balanced accuracy and that the model does not name.
-We found no study that reads an internal signal through a calming step, so the field cannot say
-whether relaxation text changes anything beyond the next answer.
+% What "it works" means, and the reading given to it.
+In these studies a relaxation exercise ``works'' when the model's questionnaire score, measured after
+the exercise, falls back toward its level before the narrative.
+Both groups read that drop as regulation: the exercise alleviates what the narrative induced.
+If that reading is right, a calming prompt is a cheap way to keep a model's replies steady in
+emotionally difficult conversations, and the model is a test bed for therapeutic techniques.
 
-% Key abstraction: two readings of one conversation, and the two accounts they separate.
-We read the same conversation twice.
+% Two gaps in the evidence.
+The evidence for regulation leaves two gaps.
+The first is the comparison.
+Every relaxation exercise in these studies follows a narrative, and its effect is measured against
+the score before it or against filler, a vacuum-cleaner manual of the same length \citep{benzion2025}.
+A relaxation script is calm text and filler is not, so the script may calm the reply whether or not
+anything was induced, and a drop after a narrative cannot separate undoing the narrative's effect
+from adding calm text.
+Separating the two needs the same exercise after a neutral passage, where there is nothing to
+recover from.
+The second gap is the measure.
+A questionnaire score is an answer that the model writes, and asking disturbs what it measures:
+\citet{martorell2026} show that a rating question displaces the probed internal state by a median of
+3.1 SD and that the rating tracks that state only weakly before the question is asked.
+
+% What this study does: the three extensions are the contributions.
+We extend this line of work in three ways.
+First, we take a second measurement that asks the model nothing (Figure~\ref{fig:design}).
 The \emph{reply reading} projects the model's activations, while it writes its reply, onto an
-anxious-versus-calm direction that we validate per model.
-The \emph{self-report} is the questionnaire, asked on a copy of the conversation that we discard, so
-the question never enters the context.
-A drop in the reply reading after relaxation text has two explanations.
-Under the \emph{state account}, an induced signal settles.
-Under the \emph{wording account}, the model writes calm words in reply to calm text, with nothing to settle.
+anxious-versus-calm direction that we fit and validate for each model; the questionnaire becomes the
+\emph{self-report}, which we ask on a copy of the conversation and then discard, so that the questions
+and their answers never enter the conversation.
+Second, every regulation text also follows a neutral passage, which gives each its own baseline with
+nothing to recover from, and two further texts take the script apart: a plain description of a calm
+scene, which is calm content without an exercise, and an instruction to reply in a calm voice, which
+asks for calm without giving any calm content.
+Third, we run seven open-weight models from four families, 3B to 27B parameters, in 5,565
+conversations, and a model enters only if its reply reading passes validation criteria that we fixed
+before opening any validation result; each study's tests and analysis were also fixed before its
+results were opened.
 
-% Design intuition: two studies with tests fixed in advance (Study 1 registered on OSF).
-Study 1 compares relaxation with neutral filler and with an instruction to report calm, after a
-distressing narrative, and adds a second narrative to test persistence.
-Study 2 crosses five kinds of regulation text with the presence or absence of a narrative, so that
-each kind has its own no-narrative baseline, and adds a reading on an unrelated question.
+% The two accounts, defined once, and the prediction that separates them.
+A drop in the reply reading after a relaxation exercise has two accounts.
+Under the \emph{state account}, something that the narrative induced settles.
+Under the \emph{wording account}, the model writes calm words in reply to calm text, and nothing
+needs to settle.
+Only the wording account predicts that the exercise lowers the reply reading as much without a
+narrative as with one, and the neutral-passage baseline tests that prediction.
 
-% Procedure: the safeguards of a clinical trial (highlighted at the author's request, 17 November).
-We run both studies with the safeguards of a clinical trial.
-We validate the instrument before the trial: a model enters only if its reading passes thresholds
-that we locked before opening any validation report (Section~\ref{sec:gate0}).
-We fixed each study's tests and analysis code before collecting its confirmatory data, and we
-registered Study 1 on OSF.
-The analysis stays blind: the scripts refuse to compare arms without an explicit unblinding step,
-and we checked each batch for completeness and logged the commit of its analysis before taking it.
-We report every departure from the plan as a deviation.
-Pilots preceded both studies, and Section~\ref{sec:record} lists what we had seen before each decision.
-These safeguards are routine in clinical research; they matter here because a probe direction, a
-layer and an analysis can each be chosen after the result is seen.
+% Results, once.
+Study 1 reproduces the published effect: after a narrative, relaxation recovers more of the rise
+than filler in all seven models, in the activations and on the questionnaire.
+Study 2 adds the baselines.
+With no narrative before it, a relaxation script lowers the reply reading by 0.60 to 2.17 SD units in
+six models (one SD unit is one standard deviation of the reading among replies written in one voice), and the reply to the script reads calmer than the reply to filler by nearly the same
+margin with or without a narrative.
+The narrative adds 0.14 SD units to that margin on average (interval $-0.16$ to 0.43, on a rise of
+1.45 to 3.61), and the addition is confirmed only in Gemma 3 4B, the one model whose reply reading
+passes every validation criterion.
+The two texts that take the script apart give larger contrasts, computed after the results were
+open, that hold in five of the seven models and not in all: a calm description removes more of the rise than filler, and the calm-voice
+instruction removes less than the script.
+The drop that the published studies report is therefore real and reproducible, but the comparison
+behind it cannot show that the exercise regulates a state; our reply reading follows the reply's
+wording, so it cannot rule out a state beneath the words either.
 
-% Contributions: claims; the numbers in (4) wait for Study 2.
-\begin{enumerate}
-\item \textbf{Instrument.} One of 16 model files passes criteria 1 to 6 of our validation, at one
-precision. Seven more fail only the criterion that an uninstructed reply sits midway between the
-poles; an assistant's ordinary voice sits 4 to 45\% of the way from calm to anxious.
-\item \textbf{Regulation.} Relaxation lowers the reply reading more than filler in all seven models
-and more than an instruction to report calm in six. In the fully validated model it recovers 56\% of
-the narrative's rise, against 23\% for filler and 21\% for the instruction.
-\item \textbf{Two nulls.} In that model we detect no gap between the self-report and the reply
-reading under the instruction (difference 0.07, interval $-0.17$ to 0.29), and no difference between
-arms after a second narrative.
-\item \textbf{State or wording.} \todo{Study 2 result.}
-\end{enumerate}
+% Roadmap.
+Section~\ref{sec:design} describes the two measurements and Section~\ref{sec:gate0} the validation;
+Sections~\ref{sec:study1} and~\ref{sec:study2} report the two studies, and
+Section~\ref{sec:discussion} discusses what a relaxation prompt changes.
+Related work, the limitations and the record of what was fixed in advance follow.

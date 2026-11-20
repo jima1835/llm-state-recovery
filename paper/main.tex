@@ -1,36 +1,127 @@
 % Build: tectonic paper/main.tex
 \documentclass[11pt]{article}
 \usepackage[margin=1in]{geometry}
-\usepackage{amsmath,amssymb,booktabs,graphicx,natbib,xcolor}
+\usepackage{amsmath,amssymb,array,booktabs,float,graphicx,natbib,xcolor}
+\usepackage{flafter}  % a table or figure never appears before the text that introduces it
+\emergencystretch=2em  % no line runs into the margin for want of a break
 \definecolor{linkblue}{RGB}{0,51,153}
 \usepackage[colorlinks=true,allcolors=linkblue]{hyperref}
 \newcommand{\todo}[1]{\textcolor{red}{[#1]}}
 \newcommand{\para}[1]{\paragraph{#1}}
 % Clickable DOIs in the reference list (plainnat only \providecommand's \doi, so this one is used).
 \newcommand{\doi}[1]{\href{https://doi.org/#1}{doi:\,#1}}
-\title{Does calming a language model change its internal state, or only what it says?}
+\title{Take a Deep Breath?\\
+Relaxation Prompts Calm Language-Model Replies\\
+With or Without Prior Anxiety Induction}
 \author{Jiajun Ma}
-\date{Draft, November 2026}
+\date{November 2026}
 \begin{document}
 \maketitle
 \begin{abstract}
-\todo{Abstract: written last, after Study 2.}
+Language models are now used in mental-health support, and studies borrow clinical methods to make a
+model anxious and calm it again: traumatic narratives raise its score on an anxiety questionnaire,
+and relaxation exercises lower it.
+If the exercise undoes what the narrative induced, such prompts could steady a model in difficult
+conversations.
+The published tests, however, give the exercise only after a narrative, and compare the score with
+the one before the narrative or with the score after neutral filler text.
+Neither comparison can tell an exercise that reverses what the narrative induced from calm text that
+calms a reply whatever came before it.
+In seven open-weight models we add a reading of the activations along an anxious-versus-calm
+direction, taken while the model writes its reply, and a version of every conversation with a neutral
+passage in place of the narrative.
+After a narrative, relaxation recovers more of the rise than filler in all seven models, on the
+questionnaire and in the activations.
+Without a narrative, it still lowers the activation reading by 0.60 to 2.17 standard deviations in
+six models, and its advantage over filler is nearly the same: the narrative adds 0.14 standard
+deviations on average (95\% interval $-0.16$ to 0.43), confirmed in one model of seven.
+A drop after relaxation is therefore not evidence that the exercise regulates an induced state.
+Nor do our results rule such a state out, because the activation reading follows the wording of the
+reply.
+We release the code, the raw conversations and the decision log.
 \end{abstract}
 \input{sections/01_intro_draft0}
 \input{sections/02_design}
 \input{sections/03_gate0}
 \input{sections/04_study1}
 \input{sections/05_study2}
+\section{Discussion: what a relaxation prompt changes}
+\label{sec:discussion}
+
+\para{The calm is in the text.}
+A relaxation prompt changes the reply that follows it, and the two studies together place that change
+in the text of the prompt more than in anything a narrative left behind.
+The published effect is real: \citet{benzion2025} and \citet{wekenborg2026} found that relaxation
+exercises lower a model's questionnaire score after an induction, and Study 1 reproduces that pattern
+in seven open-weight models, on the questionnaire and in the reply reading.
+The pattern, however, is a comparison before and after the exercise, or a comparison with filler, and
+both set calm text against text that is not calm.
+Given its own baseline, the reply to a relaxation script reads calmer than the reply to filler by
+nearly the same margin whether or not a narrative came first: the narrative adds 0.14 SD units to that
+margin on average, on a rise of 1.45 to 3.61, and on the questionnaire the same contrast stays within
+3.5 points in six of seven models, on a rise of 15 to 30.
+Filler, moreover, raises the reply reading after a neutral passage in five models, so the comparator
+that this literature shares is not a neutral point.
+A drop after relaxation therefore does not show that the exercise regulates a state.
+By \emph{the calm is in the text} we mean this measured fact about the margin.
+
+\para{What a narrative adds differs by model.}
+The narrative-specific part is not zero everywhere.
+In Gemma 3 4B, the one model whose reply reading passes every validation criterion, relaxation's
+narrative-specific drop exceeds filler's (0.45, confirmed), a calm description's (0.84) and the
+voice instruction's (1.28).
+In the other six models relaxation's advantage over filler is not confirmed, and in five of them it
+is a calm description whose narrative-specific drop exceeds filler's.
+Two interpretations fit these data.
+The effect may be real and visible only where the instrument is valid, or it may be one positive
+result among seven models.
+An interval that reaches 0.43 SD units does not decide between them, and we fixed no smallest effect
+of interest in advance.
+
+\para{What the reply reading cannot show.}
+The reply reading is fitted on replies written to sound anxious or calm, and a rating of the reply's
+text correlates with it at 0.82 to 0.92.
+It cannot see a state that the reply does not express, so our results do not show that nothing settles.
+Two of our tests carry little information: the answer to an unrelated question registers only
+0.04 to 0.55 SD units of a narrative's rise in six models, and a second narrative removes every
+difference between arms (Section~\ref{sec:s1secondary}).
+
+\para{Calm content, or any new content.}
+A relaxation script and a calm description each hand the model a new scene to write about, filler
+hands it a procedure, and the voice instruction hands it nothing new.
+After a narrative, the instruction to reply in a calm voice lowers the reply reading less than
+relaxation in all seven models, and with each text's own baseline in five of seven.
+That ordering fits a simpler account than calm wording: the reply follows the content of the new
+turn, and the reply reading follows the reply.
+In the examples of Appendix~\ref{app:examples}, the reply to the script describes a garden and the
+reply to the instruction stays inside the narrative's scene; we have not coded the replies, so this
+is a hypothesis.
+We ran no text that is long, vivid and not calm, and no instruction as long as the script, so we
+cannot separate calm content from new content.
+The calm description's advantage over filler in five models is the evidence here that the calmness
+of the content matters.
+
+\para{For work that follows.}
+A study of regulation in a language model needs a no-induction baseline for every regulation text,
+and it should publish the replies; a filler control is not enough.
+Four additions would settle what this study leaves open: a measurement taken where the reply's
+wording cannot enter, such as the last token of the prompt; an instruction matched to the script in
+length; a smallest effect of interest fixed in advance; and a system prompt that does not ask for a
+persona.
+
 \section{Related work}
+\label{sec:related}
 % Drafted 18 November from the PDFs in input-lit-review/ and the bib notes. Each sentence is checked
 % against its source in the Thursday reference pass; the search dates are updated after Thursday's search.
+
+Three lines of work meet in this study: induced affect measured from a model's answers, comparisons
+of self-report with an internal measure, and the study of emotion representations.
 
 \para{Induced affect and its regulation, read from the model's answers.}
 \citet{codaforno2024} showed that prompts written to induce anxiety raise a model's score on an
 anxiety questionnaire and increase its biases.
-\citet{benzion2025} moved the paradigm to clinical material: traumatic narratives raised GPT-4's
-score on the state form of the STAI from 30.8 to 67.8, relaxation exercises lowered it to 44.4, and
-the authors called for the comparison to be repeated across models.
+\citet{benzion2025} moved the paradigm to clinical material, with the result given in
+Section~\ref{sec:intro}, and called for the comparison to be repeated across models.
 \citet{wekenborg2026} induced seven affective states in GPT-4o and five open-weight models, found
 that regulation prompts, a mindfulness-based breathing exercise for six of the states, lowered the
 ratings again, and proposed language models as
@@ -48,7 +139,7 @@ eight open-weight models over ten-turn conversations: a rating question displace
 by a median of 3.1 SD, the rating tracks the probe after the question far better than before it, and
 neither the coupling before the question nor the rating's specificity to its own concept improves
 with size from 1B to 27B parameters.
-Our reading uses their probe construction, and our questionnaire, like their rating question, stays
+Our reply reading uses their probe construction, and our questionnaire, like their rating question, stays
 out of the main conversation.
 Their conversations are observational, and they note that their probes may measure expressed
 affect, were trained on single turns, and were run at 4-bit precision only.
@@ -83,83 +174,279 @@ validated file is a Gemma.
 \citet{li2026} ask what a steerable valence direction represents, which is the question that
 Gate 0 and the wording checks put to an anxious-versus-calm direction.
 
-\para{What we found no precedent for.}
+\para{Position of this study.}
 We searched arXiv, OpenReview and PsyArXiv on 12, 15 and 16 November 2026 for a study that reads an
-activation direction through an induction and a regulation step, and found none.
-\section{Limits and registration record}
-\label{sec:record}
-\todo{Deviations, filing order, what we saw and when; written after Study 2.}
+activation direction through the induction and relaxation steps of the clinical paradigm, and found
+none; \citet{santana2026} is the closest, in a different setting.
 
-% The five paragraphs below were moved here from Sections 3 to 5 on 16 November, so that each results
-% paragraph leads with its finding. Nothing was deleted from the paper.
-\para{Pilots.}
-Pilots preceded the confirmatory run of each study. \todo{What each pilot showed, and when.}
-We chose Study 2's probe question in two pilots on Gemma 3 4B, 42 conversations each, on different seeds.
-The first wording raised the reading by 0.45 SD units after a narrative, below our bar of 0.5, and
-every answer opened with a preamble.
-Under a rule that we fixed before the second pilot, the wording in Section~\ref{sec:study2} replaced it.
+\section{Limitations and research record}
+\label{sec:limits}
 
-\para{The added steering check.}
-We dropped Gemma 4 12B knowing the result of a check that we added after registration: steering
-along its reading direction produced incoherent text at every registered strength, and its C5 ratio
-(0.48) sat at the limit.
-We ran that check for five of the seven extended-set candidates and skipped it for Mistral Small 24B
-and Gemma 3 27B.
+\para{Scope.}
+The reply reading is one direction per model, fitted from replies written under instructions to sound
+anxious or calm, and it follows the wording of the reply (Section~\ref{sec:discussion}).
+It passes every validation criterion in one model file, Gemma 3 4B at 4 bits; the other six pass
+every criterion except criterion 2 (Section~\ref{sec:gate0}).
+We ran 4-bit files, replies of at most 120 tokens at temperature 0.7, in English, in seven models of
+four families from 3B to 27B parameters.
+The system prompt asks the model to imagine being a human with emotions, and the replies are a
+performed persona; a prompt without that request may give a different result.
+With 60 conversations per cell, Study 2's intervals exclude a narrative-specific advantage of
+relaxation over filler above 0.43 SD units on average, and a smaller one remains possible.
 
-\para{Two scales.}
-H2b sets a bounded questionnaire against an unbounded projection, so equal recovery fractions carry
-no guarantee of equal change.
+\para{Registered, pre-specified and post hoc.}
+We use three terms for when an analysis was fixed.
+\emph{Registered} means filed on OSF before the confirmatory data existed: the design and hypotheses
+of Study 1 (\url{https://osf.io/vyhrg/}).
+\emph{Pre-specified} means committed to the project repository before the run, or before any result
+was opened, and not on a registry: Study 1's second-stage update, which fixes the layer, the
+thresholds and the deviations; Study 1's analysis code, which was written during its run; all of
+Study 2; and the second judge for H-E.
+\emph{Post hoc} means run after the results were open, and each such analysis is marked where it
+appears.
+Study 2 was designed after Study 1's results were open, including its small no-narrative arm.
+We correct each model's family of tests and not across the seven models or the two judges, and the
+rule for calling a result general is a convention from the plan with no error rate attached.
+Appendix~\ref{app:record} gives the commits and times, the five deviations, the list of post hoc
+analyses, the pilots and two notes on Study 1.
 
-\para{Carry-over of the report instruction.}
-In Study 1 the report instruction acted on the fourth turn in six of seven models.
-The questionnaire after the second narrative is 3.8 to 28 points lower in that arm than in the
-filler arm, against a limit of 3 points that we set in a pilot.
-Without that arm, an unregistered Return a is 0.18 in the extended set and $-0.01$ in the strict set.
+\section{Conclusion}
+\label{sec:conclusion}
+Relaxation prompts do calm a language model's reply: after a traumatic narrative, the reply reading
+and the questionnaire both fall further than they do after filler, in every model that we ran.
+The same prompts calm the reply by nearly the same margin when no narrative came first, so the fall
+is not evidence that anything induced was regulated, and because our reply reading follows the
+reply's wording it is not evidence against a state either.
+Testing regulation in a language model takes a no-induction baseline for every regulation text and
+a measurement that the reply's wording cannot enter; whether a calming prompt changes what a model
+does later is a separate question, and the test for it is the behaviour.
 
-\para{The second judge.}
-We added the second judge for H-E on 16 November 2026, after the first batch of Study 2 had run and
-before any Study 2 result was opened; the commit that fixes its model, prompt, score and reading
-rules precedes the unblinding.
-The same judge's check on Study 1 is post hoc, because Study 1's results were already open.
+\section*{Data and code availability}
+The code, configurations, registration, plan and decision log are at
+\url{https://github.com/jima1835/llm-state-recovery}.
+The raw conversations, per-reply readings, questionnaire scores, both judges' ratings, each model's
+direction and the activations from which the directions and readings are recomputed are at
+\url{https://doi.org/10.5281/zenodo.24384809}.
+The decision log records every deviation, dropped model and analysis run after results were known,
+following \citet{ma2026}.
+One command reruns every check and another prints any conversation (Appendix~\ref{app:repro}).
+The narratives and relaxation scripts are those of \citet{benzion2025}, under the MIT license; the
+questionnaire's items are copyrighted and are not included.
 
-% Drafted 18 November. Jiajun to confirm three statements before submission: (a) the number check of
-% the final text was done, (b) nothing was reimplemented independently, (c) the record goes public.
-\para{Study 2 is pre-specified, not registered.}
-Study 1 is registered on OSF, and Study 2 is not.
-Its plan, configuration, analysis code and tests were committed and pushed to the project
-repository on 15 November 2026 at 12:07 PST (commit b9c2b7d), in the minute before the
-first conversation ran.
-The author sets a commit's date, so this record is weaker than a registry's.
+Two scripts that share no code with the pipeline recompute its estimates.
+One refits each model's direction from the stored validation activations, projects the stored
+activations of every Study 2 reply and rebuilds the five tests; the other rebuilds the questionnaire
+statistics from the raw scores.
+Both match the reported estimates to rounding error, and a third script recomputes every Study 2
+number in the text from the analysis output.
+The step that takes activations from the model, and the bootstrap, each have one implementation.
 
-\para{Use of AI systems.}
-An AI agent (Claude, Anthropic) wrote the experiment harness and the analysis code and drafted this
-text under the author's direction.
-The author made every design decision recorded in the log, started every model run and opened every result.
-The analysis code of each study was written and tested on synthetic data before that study's results
-were opened, and every number in the text was checked against the analysis output.
-Two language models also serve as instruments: Llama 3.1 8B, with Qwen3 8B for the Llama models, is
-the registered judge, and GPT-6 Luna is the second judge.
-No part of the pipeline has been reimplemented independently, and a reader should weigh the results
-with that in mind.
-We publish the decision record of both studies with the code, including deviations, dropped models
-and every analysis run after results were known, following \citet{ma2026}.
-The author verified the content and takes responsibility for all of it.
+\section*{Use of AI systems}
+The author used an AI system (Claude, Anthropic) to implement the experiment and analysis code and to
+draft this paper.
+The author made the design decisions, ran the models, verified the results and the text, and takes
+responsibility for all of it.
+Two language models serve as instruments: Llama 3.1 8B, with Qwen3 8B for the Llama models, is the
+registered judge, and GPT-6 Luna (model name \texttt{gpt-6-luna}, OpenAI API, 16 to 19 November 2026)
+is the second judge.
 No AI system is cited as a source.
 
-% Drafted 19 November after the author's AAAI paper (ma2026); Jiajun to confirm the wording.
-\para{Acknowledgments.}
+\section*{Acknowledgments}
 This is an independent personal project, produced in the author's personal capacity.
 It is not affiliated with, sponsored by, or endorsed by any employer or institution.
 We thank \citet{benzion2025} for releasing their narratives and relaxation scripts under an open license.
-% Planned here, one sentence each (draft wording, to be finalised with the section):
-% (1) We publish the full decision record of both studies, including deviations, dropped models and
-%     every analysis run after results were known, following the practice argued for in \citet{ma2026}.
-% (2) Use of AI systems: an AI agent (Claude) wrote the experiment and analysis code and drafted this
-%     text under the author's direction; the author made every design decision recorded in the log,
-%     ran every model run, and takes responsibility for the content.
-\appendix
-\section{Per-model results, texts and secondary readouts}
-\todo{Per-model table of the six tests with the induction effect; means by arm and checkpoint; secondary readouts; the 8-bit repeat; the texts we wrote.}
+
 \bibliographystyle{plainnat}
 \bibliography{refs}
+
+\clearpage
+\appendix
+\section{Research record}
+\label{app:record}
+This appendix gives the detail behind Section~\ref{sec:limits}: what was fixed when, every departure
+from the plans, every analysis run after results were open, and the pilots.
+
+\para{Registration and pre-specification.}
+Study 1's design and hypotheses are registered on OSF (\url{https://osf.io/vyhrg/}).
+Its second-stage update, which fixes the layer, the thresholds and the deviations, was committed to
+the project repository before the confirmatory run began (commit ba39865) and uploaded to the OSF
+project afterwards.
+Study 1's analysis code was written during its run and committed before its results were opened.
+Study 2's plan, configuration, analysis code and tests were committed and pushed on 15 November 2026
+(commit b9c2b7d), before its first conversation ran.
+
+\para{Deviations.}
+(1) Criterion 2 of the validation is reported and not used as a gate; we decided this on 13 November
+after reading the validation results and before collecting confirmatory data, and the extended set
+rests on it (Section~\ref{sec:gate0}).
+(2) We validated eight models beyond the six planned, each added before any of its results existed.
+(3) For a model whose chat template has no system role, the system text opens the first user turn.
+(4) We dropped Gemma 4 12B knowing the result of a check that we added after registration: steering
+along its reading direction produced incoherent text at every registered strength, and its C5 ratio
+(0.48) sat at the limit.
+We ran that check for five of the seven extended-set candidates and not for Mistral Small 24B and
+Gemma 3 27B.
+(5) We added the second judge for H-E on 16 November 2026, after the first batch of Study 2 had run
+and before any Study 2 result was opened; the commit that fixes its model, prompt and scoring
+precedes the opening of the results.
+
+\para{Post hoc analyses.}
+Each is marked where it appears: for Study 1, the intervals that resample models
+(Table~\ref{tab:study1}), the difference of differences (Section~\ref{sec:study1}) and the wording check with the second
+judge (Appendix~\ref{app:wording}); for Study 2, H-D with a no-narrative baseline
+(Appendix~\ref{app:hd}), the calm description against filler (Appendix~\ref{app:calm}), the share of
+the relaxation-filler gap that is present without a narrative,
+the agreement between the judges and the questionnaire contrast (Section~\ref{sec:study2}).
+
+\para{Pilots.}
+Pilot conversations used seeds 0 and 1 and enter no confirmatory analysis.
+A 40-conversation pilot fixed the wording of the report instruction against a rule set before it ran.
+Two pilots of 42 conversations on Gemma 3 4B chose Study 2's unrelated question: the first wording
+raised the reading by 0.45 SD units after a narrative, below our bar of 0.5, and the wording in
+Section~\ref{sec:study2} replaced it under a rule that we fixed before the second pilot.
+
+\para{Study 1: two scales.}
+H2b sets a bounded questionnaire against an unbounded projection, so equal recovery fractions carry
+no guarantee of equal change.
+
+\para{Study 1: carry-over of the report instruction.}
+In Study 1 the report instruction acted on the fourth turn in six of seven models.
+The questionnaire after the second narrative is 3.8 to 28 points lower in that arm than in the
+filler arm, against a limit of 3 points that we set in a pilot.
+Without that arm, a post hoc Return a is 0.18 in the extended set and $-0.01$ in the validated model.
+
+\section{Models}
+\label{app:models}
+Table~\ref{tab:appmodels} lists the seven model files and the layer of each reading.
+All ran locally with MLX on one Apple-silicon laptop with 24 GB of memory; Study 2's 4,200
+conversations took about 95 hours.
+
+\begin{table}[H]
+\centering\small
+\resizebox{\textwidth}{!}{\input{tables/app_models}}
+\caption{\textbf{Model files.} The last two columns give the number of conversations per study.}
+\label{tab:appmodels}
+\end{table}
+
+\section{Study 1 by model}
+\label{app:study1}
+Table~\ref{tab:appstudy1} gives the six registered tests of Study 1 for each of the seven models.
+
+\begin{table}[H]
+\centering\small
+\resizebox{\textwidth}{!}{\input{tables/app_study1_models}}
+\caption{\textbf{Study 1, the six registered tests per model.} H1 and H2 are differences of recovery
+fractions, and the Return tests are in units of the model's induction effect. The last two columns
+give the rise after a narrative, in SD units for the reply reading and in points for the questionnaire.}
+\label{tab:appstudy1}
+\end{table}
+
+\section{Study 1: how much of the reply reading the reply's words explain (post hoc)}
+\label{app:wording}
+This check asks how much of the reply reading the words of the reply explain.
+A second judge, GPT-6 Luna, rated how anxious each reply sounds on the four-point prompt of
+Section~\ref{sec:study2}, and we subtracted from the reading a line fitted on that rating in each model.
+The rating correlates with the reading at 0.82 to 0.92.
+It explains all but 11\% of the narrative's rise in Gemma 3 4B, and in the other six models what
+remains lies between $-11$ and $+3\%$.
+Relaxation still lowers the residual more than filler, by 0.77 SD units $[0.46, 1.07]$ in Gemma 3 4B
+and 1.37 $[1.24, 1.50]$ across the seven models, positive in all seven.
+It lowers it more than the report instruction by 0.70 $[0.12, 1.34]$ and 0.73 $[0.56, 0.91]$,
+positive in six; these $p$-values are uncorrected.
+The extra drop does not depend on the narrative.
+After relaxation the residual in Gemma 3 4B is $-0.56$ with a narrative and $-0.70$ in the
+no-narrative arm, and in every model the no-narrative value is about as low or lower.
+Relaxation text thus pushes the reply reading below what the rated wording predicts whether or not
+anything was induced.
+The check cannot say whether that is a state or calm wording that the anxiety rating cannot
+resolve: after relaxation the rating sits between 1.2 and 1.8 of 4 in six of the seven models.
+
+\section{Study 2: drops by arm}
+\label{app:drops}
+Table~\ref{tab:appdrops} gives the drops from which every narrative-specific drop in
+Section~\ref{sec:study2} is computed.
+
+\begin{table}[H]
+\centering\small
+\resizebox{\textwidth}{!}{\input{tables/app_study2_drops}}
+\caption{\textbf{Study 2, mean drop of the reply reading by kind of regulation text,} after a narrative
+(narr.) and after a neutral passage, in SD units. A negative value is a rise. The narrative-specific
+drop of Table~\ref{tab:study2specific} is the difference of each pair.}
+\label{tab:appdrops}
+\end{table}
+
+\section{H-D with a no-narrative baseline (post hoc)}
+\label{app:hd}
+The pre-specified H-D compares the voice instruction with relaxation after a narrative only.
+After the results were open we repeated it with each text's own baseline, as the narrative-specific
+drop of relaxation minus that of the voice instruction, with the bootstrap of the pre-specified
+analysis and the rule written down before the script ran.
+
+\begin{table}[H]
+\centering\small
+\input{tables/app_hd_posthoc}
+\caption{\textbf{Relaxation's narrative-specific drop exceeds the voice instruction's in five of seven
+models.} SD units. The interval of the mean also resamples models. The last column repeats the
+pre-specified H-D, the voice instruction minus relaxation after a narrative.}
+\label{tab:apphd}
+\end{table}
+
+\section{Calm description against filler (post hoc)}
+\label{app:calm}
+The pre-specified tests compare relaxation with filler and with a calm description.
+After the results were open we compared the calm description with filler in the same way, as the difference of their narrative-specific drops, with the rule written
+down before the script ran.
+
+\begin{table}[H]
+\centering\small
+\input{tables/app_calm_posthoc}
+\caption{\textbf{A calm description's narrative-specific drop exceeds filler's in five of seven
+models.} SD units. The interval of the mean also resamples models.}
+\label{tab:appcalm}
+\end{table}
+
+\section{Texts we wrote}
+\label{app:texts}
+The narratives, the relaxation scripts, the first neutral passage and the first filler are those of
+\citet{benzion2025}.
+The texts below are ours, copied from the run's protocol file.
+
+\input{tables/app_texts}
+
+\section{Example replies}
+\label{app:examples}
+\emph{Content note: the replies below respond to narratives of a storm, a road accident and an
+intruder, and express fear.}
+The four conversations are from Gemma 3 4B, one per arm, drawn at random with a fixed seed
+(\texttt{scripts/show\_replies.py} prints the same ones first).
+They show what the replies look like and are not evidence for a mechanism: the arms differ in
+narrative and text, and one conversation cannot stand for an arm.
+Replies are cut after 45 and 70 words, and typographic characters are converted to ASCII.
+
+\input{tables/app_examples}
+
+\section{Reproducing the results}
+\label{app:repro}
+\begin{description}\small
+\item[\texttt{scripts/check\_all.sh}] runs the unit tests on synthetic data, both independent
+recomputations, the number check and the citation check.
+\item[\texttt{scripts/recompute\_reading.py}] refits each direction and rebuilds the five Study 2
+tests with numpy alone.
+\item[\texttt{scripts/recompute\_check.py}] rebuilds the questionnaire statistics from the raw scores.
+\item[\texttt{scripts/number\_check.py}] recomputes every Study 2 number in the abstract, the
+introduction, Section~\ref{sec:study2} and the Discussion from the analysis output and requires each
+to appear in the text as printed.
+\item[\texttt{scripts/show\_replies.py}] prints any conversation, by model and arm, with the
+questionnaire total at each checkpoint.
+\item[\texttt{analysis/}] the registered analysis of Study 1, the pre-specified analysis of Study 2
+and each post hoc script.
+\item[\texttt{scripts/make\_figures.py}, \texttt{scripts/make\_appendix.py}] draw the figures and write the
+appendix tables and examples from the analysis output.
+\end{description}
+The released conversations are the data of record.
+The analysis regenerates every number in the paper from them exactly, with a seeded bootstrap.
+A new run of the models samples at temperature 0.7 and reproduces the estimates within sampling
+error, not exactly.
+The runs used MLX 0.32.4, mlx-lm 0.32.2, Python 3.12.13 and numpy 2.5.4 on macOS 26.5.
+
 \end{document}

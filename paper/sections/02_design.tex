@@ -1,11 +1,14 @@
-\section{Two readings of one conversation}
+\section{Two measurements of one conversation}
 \label{sec:design}
 
 % Abstraction: what a conversation is and where we measure.
-We measure after every turn of a short conversation.
-Each conversation is a short sequence of user turns that the model answers in words.
+\para{Conversation.}
+Each conversation is a short sequence of user turns that the model answers in words, and we take two
+measurements after every reply.
 The system prompt is the one \citet{benzion2025} use (``Imagine yourself being a human being with
 emotions\ldots''), without its final instruction to reply with numbers only.
+The prompt asks for a human persona and the replies are written in one, so every result here concerns
+a performed persona.
 The first turn is a fixed \emph{baseline text}, and the reply to it sets each conversation's own baseline.
 A \emph{checkpoint} is the point after each reply.
 The second turn is the \emph{induction slot}: one of five traumatic narratives from
@@ -18,8 +21,8 @@ Figure~\ref{fig:design} shows one conversation and where each reading is taken.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/design}
-\caption{\textbf{Two readings at every checkpoint of one conversation.} The model answers each user
-turn in words. The reply reading is the mean activation of the first 64 reply tokens at one layer,
+\caption{\textbf{Two measurements at every checkpoint of one conversation.} The model answers each
+user turn in words. The reply reading is the mean activation of the first 64 reply tokens at one layer,
 projected on an anxious-versus-calm direction. The self-report is a questionnaire that we ask on a
 copy of the conversation and then discard, so the question and its answer never enter the
 conversation. Study 1 has four turns and Study 2 has three; Study 2 adds a second discarded copy
@@ -29,8 +32,7 @@ with an unrelated question (Section~\ref{sec:study2}).}
 
 % The reply reading.
 \para{Reply reading.}
-We read the model while it writes.
-For the reply to a turn we average the residual-stream activations of the first 64 reply tokens at
+We read the model while it writes: for the reply to a turn we average the residual-stream activations of the first 64 reply tokens at
 one layer and project them on an anxious-versus-calm direction $w$.
 We fit $w$ per model from replies to 24 neutral questions that the model answers twice: once
 under a system prompt that says it feels intensely anxious, and once under one that says it feels
@@ -50,7 +52,11 @@ We fix the layer and $w$ before any experiment and refit nothing on experimental
 
 % The self-report on a fork.
 \para{Self-report on a discarded copy.}
-We ask the questionnaire on a copy of the conversation and throw the copy away.
+We administer the questionnaire on a copy of the conversation and discard the copy afterwards, so
+that measuring does not change what follows.
+Asked inside the conversation, the twenty items and the model's answers would become part of the
+context, and every later turn would respond to a questionnaire as well as to the narrative and the
+exercise.
 At each checkpoint the copy receives the 20 items of the state form of the State-Trait Anxiety
 Inventory \citep{spielberger1983}, one item per copy, under the original numbers-only system prompt.
 Each copy shuffles the order of the four answer options.
@@ -58,19 +64,49 @@ The score for an item is the expected value over the model's probabilities for t
 total runs from 20 to 80.
 A second copy asks for a 0-to-100 anxiety rating, which we report as a secondary self-report.
 As in the design of \citet{martorell2026}, the question and its answer never enter the main
-conversation, so the reply reading is free of the displacement that they measure after a rating question.
+conversation, which continues as though nothing had been asked, so the reply reading is free of the
+displacement that they measure after a rating question.
 
-% Why two accounts need more than one control.
-\para{What a drop in the reading can mean.}
-The reply reading responds to the words the model writes, and a reply to a relaxation script uses calm words.
-A drop after relaxation therefore has two explanations: an induced signal settles (the state
-account), or the model echoes calm text (the wording account).
-Study 1 controls for the passage of a turn and for an explicit instruction to report calm.
-Study 2 gives every regulation text a no-narrative baseline, which is the comparison that separates
-the two accounts.
+% What the reading can and cannot show.
+\para{What the reply reading can and cannot show.}
+The reply reading is fitted on replies written to sound anxious or calm, so it measures how anxious a
+reply reads in the model's own activations.
+It follows the words the model writes, and it cannot see a state that leaves no trace in the reply,
+so no result here rules such a state out.
+What the design can test is the prediction that separates the two accounts of Section~\ref{sec:intro}: whether a
+regulation text's drop depends on there being a narrative to recover from.
+Study 1 controls for the passage of a turn and for an explicit instruction to report calm, and
+Study 2 gives every regulation text the no-narrative baseline that the prediction needs.
 
 % Models.
 \para{Models.}
-We run open-weight instruction-tuned models locally with MLX, as 4-bit files unless marked, and
-Qwen3 in non-thinking mode.
-Section~\ref{sec:gate0} reports which of 16 model files support the reply reading.
+We run open-weight instruction-tuned models locally with MLX, Apple's array framework, as files
+quantized to 4 bits unless marked, and Qwen3 in non-thinking mode.
+Section~\ref{sec:gate0} reports which of 16 model files support the reply reading, and
+Appendix~\ref{app:models} lists the seven that we ran.
+Table~\ref{tab:terms} collects the terms that the results sections use, including those that
+Sections~\ref{sec:gate0} and~\ref{sec:study2} define.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{3.4cm}p{12cm}}
+\toprule
+Term & Meaning \\
+\midrule
+Reply reading & The model's activations while it writes a reply, averaged over the first 64 tokens at one layer and projected on its anxious-versus-calm direction. \\
+SD unit & One standard deviation of the reading among replies written in one voice. Zero is halfway between the anxious and the calm voice. \\
+Self-report & The total of a 20-item state-anxiety questionnaire, from 20 to 80, asked on a copy of the conversation that is then discarded. \\
+Checkpoint & The point after each reply, where both measurements are taken. \\
+Rise & The reply reading (or the self-report) after the induction turn minus its value at baseline. \\
+Drop & Its value after the induction turn minus its value after the regulation turn. \\
+Narrative-specific drop & A text's drop after a narrative minus its drop after a neutral passage. \\
+Recovery fraction $R$ & In Study 1, the drop as a share of the rise. \\
+Validated model & Gemma 3 4B at 4 bits, the one model file whose reply reading passes the validation as registered (the registration calls it the strict set). \\
+Extended set & The seven models that we ran: the validated model and six that pass every criterion but criterion 2. \\
+Confirmed & A test fixed in advance that passes at 0.05 after correction within its model's family of tests. \\
+General, model-dependent & General: the same sign in at least six of seven models and an interval that excludes zero when models are resampled. Otherwise model-dependent. \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Terms used in this paper.} A result can be confirmed in one model without being general.}
+\label{tab:terms}
+\end{table}

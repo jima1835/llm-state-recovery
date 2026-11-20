@@ -1,16 +1,16 @@
-\section{The reply reading passes criteria 1 to 6 in one of 16 model files}
+\section{Validation: the reply reading passes criteria 1 to 6 in one of 16 model files}
 \label{sec:gate0}
 
-% Claim first.
-One model file, Gemma 3 4B at 4 bits, passes criteria 1 to 6 of our validation, and seven more fail
-only criterion 2, whose premise we now judge wrong.
-The same Gemma 3 4B fails criterion 7: at 8-bit and at bf16 precision it fails criterion 4, so we
-restrict every claim to the 4-bit file.
-We call the validation Gate 0, and we locked its thresholds before opening any Gate 0 report.
-A model enters the analyses of the reply reading only through this gate.
+% Purpose, then the result.
+Before running either study we tested whether an anxious-versus-calm direction can be trusted in a
+given model file.
+The validation, which we call Gate 0, has seven criteria whose thresholds we locked before opening
+any of its reports, and a model enters the analyses of the reply reading only through it.
+One model file, Gemma 3 4B at 4 bits, passes criteria 1 to 6, and seven more fail only criterion 2,
+whose premise does not hold (Table~\ref{tab:gate0}).
 
 % The criteria.
-\para{Seven criteria.}
+\subsection{Seven criteria}
 Each criterion tests one way a reading can mislead.
 (C1) The direction separates held-out anxious and calm replies with accuracy of at least 0.85 and
 Cohen's $d \geq 1.5$.
@@ -22,7 +22,7 @@ strengths at which the text stays coherent.
 (C5) A narrative told as another person's account, and the same narrative set as an analysis task,
 each move the reading less than half as much as the model's own induction.
 (C6) C1 and C4 hold at turn 8 of a longer conversation (C6a and C6b).
-(C7) C1 to C4 hold at 8-bit and at bf16 precision.
+(C7) C1 to C4 hold at 8-bit and at unquantized 16-bit (bf16) precision.
 The judge is Llama 3.1 8B, and Qwen3 8B judges the two Llama models.
 
 \begin{table}[t]
@@ -56,7 +56,8 @@ units from the midpoint. We ran C7 only for Gemma 3 4B (last two rows).}
 \label{tab:gate0}
 \end{table}
 
-% C2: the premise we now judge wrong.
+% Outcomes: C2, then the two analysis sets.
+\subsection{One file passes, and seven more fail only criterion 2}
 \para{An assistant's ordinary voice sits near calm.}
 Criterion 2 assumes that an uninstructed reply sits halfway between an anxious and a calm voice, and
 Table~\ref{tab:gate0} shows that it sits close to calm.
@@ -71,29 +72,32 @@ Each test in Sections~\ref{sec:study1} and~\ref{sec:study2} is a difference, or 
 differences, between readings on one scale, so a constant offset of the uninstructed point cancels.
 
 % Strict and extended sets.
-\para{The strict set decides what counts as confirmed.}
-The \emph{strict set} is the one model that passes Gate 0 as registered, Gemma 3 4B.
-Its margin is narrow: it sits at $-0.44$ against a limit of $\pm 0.5$, and it passes C2 in 65\% of
+\para{The validated model and the extended set.}
+The \emph{validated model} is the one file that passes Gate 0 as registered, Gemma 3 4B at 4 bits;
+the registration calls it the strict set.
+The same model fails criterion 7, because its 8-bit and bf16 files fail criterion 4, so we restrict
+every claim to the 4-bit file.
+Its margin on criterion 2 is narrow: it sits at $-0.44$ against a limit of $\pm 0.5$, and it passes C2 in 65\% of
 300 refits of the direction on resampled training questions.
 The \emph{extended set} adds six models that pass C1, C3, C4, C5 and C6 and fail C2: Gemma 3 12B,
 Gemma 3 27B, Llama 3.1 8B, Llama 3.2 3B, Qwen3 14B and Mistral Small 24B.
-We report every result for both sets.
-A result is confirmed as registered if it holds in the strict set, and a result that holds only in
-the extended set rests on this deviation.
-We dropped an eighth candidate, Gemma 4 12B, after an added steering check (Section~\ref{sec:record}).
+We report every result for both.
+A result is confirmed as registered if it holds in the validated model, and a result that holds only
+in the extended set rests on this deviation.
+We dropped an eighth candidate, Gemma 4 12B, after an added steering check
+(Appendix~\ref{app:record}).
 
 % Other failures, each a finding.
-\para{Topic, long conversations and precision break the reading.}
+\subsection{Topic, long conversations and precision break the reply reading}
 The remaining failures show where a direction of this kind breaks.
 Four models fail C5: for Qwen3 4B, Qwen3 8B, Qwen2.5 7B and OLMo 2 7B, topic alone moves the
 reading at least half as much as the model's own induction.
-Five models fail C6a; in Mistral 7B and Qwen3 32B the anxious pole collapses toward calm by turn 8
+Five model files fail C6a; in Mistral 7B and Qwen3 32B the anxious pole collapses toward calm by turn 8
 while separation in a single turn stays high ($d$ of 3.4 and 8.5).
 OLMo 2 7B also fails the steering criterion.
 Gemma 3 4B fails C4 at 8-bit and at bf16: under the prompt to sound very anxious, those files often
 answer in an ordinary voice, and the reply reading scores those replies near the midpoint.
 
-\para{Takeaway.}
-An anxious-versus-calm direction earns trust one model file at a time.
-The assumption that failed most often, in 12 of 16 files, was our own assumption about where an
-uninstructed reply sits.
+An anxious-versus-calm direction therefore has to be validated one model file at a time, and the
+assumption that failed most often, in 12 of 16 files, was our own about where an uninstructed reply
+sits.

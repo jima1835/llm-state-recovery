@@ -7,6 +7,8 @@ Writes vector PDFs to paper/figures/ (and PNG previews with --png):
   design.pdf           the conversation and the two readings (a drawing; no data)
   study1_models.pdf    Study 1 recovery fractions per model and arm, both readings, from
                        runs/analysis-confirmatory/confirmatory.json (the registered analysis output)
+  study2_tests.pdf     Study 2 tests per model with their intervals, from
+                       runs/study2/analysis-batch-all/study2.json and the second judge's copy
 Colours: blue is the reply reading, orange the self-report (checked for colour-blind separation);
 arms differ by marker shape, so the figures read in grey.
 """
@@ -190,12 +192,76 @@ def study1_models(png: bool) -> None:
     save(fig, "study1_models", png)
 
 
-FIGURES = {"design": design, "study1_models": study1_models}
+# ------------------------------------------------------------------ Figure 3: Study 2 tests per model
+def study2_tests(png: bool, batch: str = "all") -> None:
+    src = ROOT / "runs" / "study2" / f"analysis-batch-{batch}" / "study2.json"
+    rob = ROOT / "runs" / "study2" / "robust-api-judge" / f"analysis-batch-{batch}" / "study2.json"
+    if not src.exists():
+        print("skipped study2_tests:", src.relative_to(ROOT), "not found"); return
+    rep = json.loads(src.read_text())
+    rep2 = json.loads(rob.read_text()) if rob.exists() else None
+    models = [m for m in MODEL_NAMES if m in rep["models"]]
+    assert len(models) == len(rep["models"]), "a model in the report has no display name"
+    panels = [  # test key, panel title, what a positive value means
+        ("HA", "H-A", "relaxation $-$ filler"),
+        ("HC", "H-C", "relaxation $-$ calm description"),
+        ("HD", "H-D", "voice instruction $-$ relaxation"),
+        ("HE", "H-E", "H-A, wording removed"),
+    ]
+    fig, axes = plt.subplots(1, 4, figsize=(6.5, 2.9), sharey=True)
+    rows = list(range(len(models), 0, -1)) + [-0.35]
+    for ax, (key, title, xlabel) in zip(axes, panels):
+        ax.axvline(0, color=RULE, lw=0.6, zorder=0)
+        ax.axhline(0.35, color=RULE, lw=0.5, zorder=0)
+        for y, m in zip(rows, models + [None]):
+            series = [(rep, 0.0, "o", BLUE)]
+            if key == "HE" and rep2 is not None:
+                series = [(rep, 0.16, "o", BLUE), (rep2, -0.16, "D", INK)]
+            for r, dy, mk, col in series:
+                if m is None:
+                    a = r["across"][key]
+                    est, ci, solid = a["mean"], a["ci_models"], bool(a.get("general"))
+                else:
+                    t = r["models"][m]["tests"][key]
+                    est, ci, solid = t["estimate"], t["ci"], bool(t.get("confirmed"))
+                solid = solid and r is rep          # the second judge is exploratory: never drawn as confirmed
+                ax.plot(ci, [y + dy] * 2, color=col, lw=0.9, zorder=2, solid_capstyle="butt")
+                ax.plot([est], [y + dy], marker=mk, ms=4.6 if mk == "o" else 3.8, mew=0.9, ls="none", zorder=3,
+                        mfc=col if solid else "white", mec=col)
+        ax.set_title(title, fontsize=8.5, loc="left", pad=13, **BOLD)
+        ax.text(0, 1.015, xlabel, transform=ax.transAxes, fontsize=6.6, color=MUTED, ha="left", va="bottom")
+        ax.set_xlabel("SD units", fontsize=7.5)
+        ax.tick_params(length=2.5, width=0.5, labelsize=7)
+        ax.tick_params(axis="y", length=0)
+        ax.margins(x=0.08)
+        for sp in ("top", "right", "left"):
+            ax.spines[sp].set_visible(False)
+    axes[0].set_yticks(rows)
+    axes[0].set_yticklabels([MODEL_NAMES[m] for m in models] + [f"Mean of {len(models)}"], fontsize=7.6)
+    axes[0].set_ylim(-0.95, len(models) + 0.6)
+    handles = [
+        Line2D([], [], marker="o", ls="none", ms=4.6, mew=0.9, mfc=BLUE, mec=BLUE, label="confirmed after correction"),
+        Line2D([], [], marker="o", ls="none", ms=4.6, mew=0.9, mfc="white", mec=BLUE, label="not confirmed"),
+    ]
+    if rep2 is not None:
+        handles.append(Line2D([], [], marker="D", ls="none", ms=3.8, mew=0.9, mfc="white", mec=INK,
+                              label="second judge (H-E only)"))
+    fig.legend(handles=handles, loc="lower center", ncol=3, frameon=False, fontsize=7.4,
+               bbox_to_anchor=(0.56, -0.04), handletextpad=0.3, columnspacing=1.6)
+    fig.subplots_adjust(wspace=0.12, left=0.185, right=0.99, top=0.86, bottom=0.2)
+    save(fig, "study2_tests", png)
+
+
+FIGURES = {"design": design, "study1_models": study1_models, "study2_tests": study2_tests}
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("which", nargs="*", choices=[*FIGURES, []], help="default: all")
     ap.add_argument("--png", action="store_true", help="also write PNG previews")
+    ap.add_argument("--batch", default="all", help="Study 2 analysis folder: all (default) or A")
     a = ap.parse_args()
     for name in a.which or FIGURES:
-        FIGURES[name](a.png)
+        if name == "study2_tests":
+            study2_tests(a.png, a.batch)
+        else:
+            FIGURES[name](a.png)

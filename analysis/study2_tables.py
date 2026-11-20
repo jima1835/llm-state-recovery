@@ -54,7 +54,10 @@ def cell(t: dict) -> str:
 def tests_table(reg: dict, rob: dict | None) -> str:
     models = list(reg["models"])
     cols = "l" + "r" * 7
-    head = ("Model & H-A & H-C & H-D & H-E & H-E, second judge & H-B & Probe-turn rise \\\\")
+    # Plain-language labels first, the plan's test codes beneath them.
+    head = (" & Relaxation & Relaxation vs & Voice instruction & H-A, wording & H-A, wording & H-A on the & Probe-turn \\\\\n"
+            " & vs filler & calm description & vs relaxation & removed & removed, second judge & probe turn & rise \\\\\n"
+            "Model & (H-A) & (H-C) & (H-D) & (H-E) & (H-E) & (H-B) & \\\\")
     lines = ["\\begin{tabular}{" + cols + "}", "\\toprule", head, "\\midrule"]
     for m in models:
         r = reg["models"][m]

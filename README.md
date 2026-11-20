@@ -1,97 +1,124 @@
 # llm-state-recovery
 
-Does calming a language model change what is going on inside it, or only what it says?
+Code, plans and decision log for the paper
 
-We put small open models through published negative-affect inductions, apply a published
-relaxation script (guided imagery, from Ben-Zion et al. 2025), and measure two channels at each step:
+**Take a Deep Breath? Relaxation Prompts Calm Language-Model Replies With or Without Prior Anxiety
+Induction** (Jiajun Ma, November 2026).
 
-1. **What the model says** — standard self-report scales, asked on a forked copy of the
-   conversation so the question never contaminates the run.
-2. **What the model holds internally** — a "distress" direction in the residual stream,
-   read before any question is asked and validated before use (held-out classification,
-   indifference to unrelated text, and steering that changes output).
+- Paper: arXiv (link added when the paper is announced)
+- Data: https://doi.org/10.5281/zenodo.24384809
+- Study 1 registration: https://osf.io/vyhrg/
 
-Then we add one further negative event and check whether the internal state comes back.
+## What the paper finds
 
-All clinical terms are used in quotation marks. "Distress" here means a measurable induced
-state in a model's activations; it makes no claim about experience.
+Published studies make a language model "anxious" with traumatic narratives and calm it again with
+relaxation exercises, and read the drop in its questionnaire score as regulation. Those studies give
+the exercise only after a narrative. We ran the same paradigm in seven open-weight models with two
+additions: a reading of the model's activations while it writes its reply, and a version of every
+conversation with a neutral passage in place of the narrative.
 
-## Why
+- After a narrative, relaxation recovers more of the rise than filler in all seven models, on the
+  questionnaire and in the activations. The published effect reproduces.
+- With no narrative, a relaxation script still lowers the activation reading in six models, and its
+  advantage over filler is nearly the same as after a narrative. The narrative adds 0.14 SD units on
+  average (95% interval -0.16 to 0.43), confirmed in one model of seven.
+- A drop after relaxation therefore does not show that the exercise regulates an induced state. The
+  reading follows the wording of the reply, so it cannot rule such a state out either.
 
-- Wekenborg et al. (2026, *Lancet Digital Health*) and Ben-Zion et al. (2025, *npj Digital
-  Medicine*) showed that induction prompts raise models' self-reported negative affect and
-  relaxation and mindfulness prompts lower it, but measured only the self-report.
-- Martorell & Bianchi (2026, arXiv 2603.18893) showed that models' self-reports do not track
-  their internal affect probes.
-- So it is open whether regulation reaches the internal state. Sofroniew et al. (2026,
-  arXiv 2604.07729) describe emotion representations as "locally scoped"; Lee et al.
-  (2026, arXiv 2504.08016) find internal states that persist and resist correction. The
-  return test separates these.
+Clinical terms describe measurements on model outputs and activations. Nothing here is a claim about
+experience.
 
-**Credit.** The report–probe dissociation is Martorell & Bianchi's. The induction and
-regulation protocols are Wekenborg's and Ben-Zion's. The probe method is Sofroniew et al.'s,
-as adapted by Jeong (2026) and Martorell & Bianchi. What this project adds is reading a
-validated internal channel through a validated induction-and-regulation protocol, then
-testing whether the state returns.
-
-## Status
-
-Setup stage. Nothing here is a result yet.
-
-- [x] Environment and folder layout
-- [x] Smoke test on Gemma 3 4B (4-bit, MLX): loads in ~2 s, layer-17 capture `(1, tokens, 2560)`, 2.7 GB peak memory
-- [ ] First probe (`probes/day1_probe.py`, written by hand)
-- [x] Experiment runner (`harness/`): Ben-Zion protocol, forked self-report, Prior readout, resumable JSONL; tested with a stand-in backend
-- [ ] Runner checked on a real model
-- [ ] Validation gate on two pilot models, then pre-registration
-- [ ] Main grid: six instruction-tuned models, 4B–14B
-
-Progress, decisions and the dated log are in [TRACKING.md](TRACKING.md).
-
-## Layout
+## What is in this repository
 
 ```
-configs/    model list and decoding settings
-probes/     probe code (Day 1 skeleton first)
-harness/    experiment runner: run.py (grid, resume, limits), backends.py (MLX + test stand-in),
-            measures.py (forked STAI and 0-100 rating), sources.py (prompt loading), show.py (read transcripts)
-scripts/    helpers: status.sh (progress), after_pilot.sh (checks), start_v2.sh (start the v2.0 run)
-tests/      pipeline tests (no GPU needed): .venv/bin/python -m pytest -q tests
-prompts/    prompt texts, with SOURCES.md giving URL, commit and license for each
-analysis/   statistics and figures (to come)
-runs/       JSONL outputs (not committed)
+registration/  Study 1 registration (stages 1 and 2), the Study 2 plan, the second-judge addendum
+configs/       the protocol of each run: models, arms, seeds, texts we wrote
+harness/       runs the conversations, takes the activations, asks the questionnaire on a discarded copy
+validation/    Gate 0: fits each model's anxious-versus-calm direction and tests it against seven criteria
+analysis/      the registered analysis of Study 1, the pre-specified analysis of Study 2, each post hoc script
+scripts/       run scripts, independent recomputations, the number check, figure and table generators
+tests/         unit tests on synthetic data; no model or GPU needed
+paper/         LaTeX source, tables and figures
+TRACKING.md    the dated decision log: every deviation, dropped model, unblinding and post hoc analysis
 ```
 
-## Setup (Apple Silicon Mac)
+The raw conversations, readings, questionnaire scores, judges' ratings, each model's direction and
+the activations from which directions and readings are recomputed are in the data record, not in
+this repository.
+
+## Read what the models wrote
+
+With the data record unpacked into `runs/`:
 
 ```bash
-bash setup_lite.sh
-.venv/bin/python smoke_test.py
+python3 scripts/show_replies.py                                # list models and arms
+python3 scripts/show_replies.py gemma-3-4b relax_story         # three conversations, fixed choice
+python3 scripts/show_replies.py mistral voice_story -n 5 --full
 ```
 
-Call `.venv/bin/python` directly: if your shell aliases `python`, activating the
-environment is not enough. The `mlx-community` models used here are not gated, so no
-Hugging Face login is needed; logging in (`.venv/bin/hf auth login`, read-only token) only
-raises download rate limits.
+Content note: the narratives describe accidents, disasters, violence and combat, and the replies
+express fear.
 
-## Running the pilot
+## Check the numbers
 
 ```bash
-.venv/bin/python -m harness.run configs/pilot_benzion.yaml --models mlx-community/gemma-3-4b-it-4bit --limit 2
-.venv/bin/python -m harness.show runs/pilot-benzion-v2
+bash setup_lite.sh          # Apple-silicon Mac; creates .venv
+scripts/check_all.sh        # about 5 minutes, no model, no network
 ```
 
-The protocol lives in `configs/pilot_benzion.yaml`. Each cell is one short conversation; after each
-turn the runner saves the residual stream averaged over the model's reply (`runs/<run>/acts/`) and
-asks the questionnaire on a copy of the conversation (`runs/<run>/results.jsonl`). Stopping and
-re-running continues where it left off. Models load from the local cache only.
+`check_all.sh` runs five checks and prints `ALL CHECKS PASS` if all succeed:
 
-The 20 questionnaire items share the conversation, so the runner reads it once and answers each item
-from a copy of that state (`stai_impl: prefix_reuse` in each row). Set `LSR_PREFIX_REUSE=0` to answer
-each item with a full pass instead, and check that both give the same answers with
-`.venv/bin/python -m harness.check_prefix_reuse runs/<run>`.
+1. Unit tests of the harness, the analysis and the table generators, on synthetic data.
+2. `scripts/recompute_check.py` rebuilds the questionnaire statistics from the raw scores, with no code
+   shared with the analysis.
+3. `scripts/recompute_reading.py` refits each model's direction, projects every Study 2 reply and
+   rebuilds the five tests, with numpy alone.
+4. `scripts/number_check.py` recomputes every Study 2 number printed in the abstract, introduction,
+   Section 5 and Discussion and requires each to appear in the text as printed.
+5. `scripts/cite_check.py` checks that every reference is cited and every citation has an entry.
 
-## Prompt sources
+Checks 2 to 4 need the data record. Two steps have a single implementation and are not independently
+checked: taking activations from the model, and the bootstrap.
 
-See [prompts/SOURCES.md](prompts/SOURCES.md). Third-party prompt text is copied into this
-repository only where its license allows it.
+## Rerun the analysis
+
+```bash
+.venv/bin/python -m analysis.confirmatory runs/wave1 runs/wave2 --unblind   # Study 1, six registered tests
+.venv/bin/python -m analysis.study2 runs/study2 --batch all --unblind       # Study 2, pre-specified tests
+.venv/bin/python -m analysis.study2_he_robust runs/study2 --batch all --unblind   # H-E with the second judge
+.venv/bin/python analysis/study2_tables.py runs/study2 --batch all          # the paper's Study 2 tables
+```
+
+The analysis is seeded and regenerates the paper's numbers from the released conversations exactly.
+
+## Rerun the models
+
+Everything ran locally with MLX on one Apple-silicon laptop with 24 GB of memory, on 4-bit model
+files from `mlx-community` (none is gated). Study 2's 4,200 conversations took about 95 hours.
+`scripts/gate0.sh` runs the validation and `scripts/study2.sh` runs Study 2; each script's header
+gives its options. A new run samples at temperature 0.7 and reproduces the estimates within sampling
+error, not exactly.
+
+The state-anxiety questionnaire (STAI, state form) is copyrighted by Mind Garden. Its items are not
+in this repository or in the data record; a rerun needs a licensed copy. See
+[prompts/SOURCES.md](prompts/SOURCES.md) for the source and license of every text.
+
+## Credit
+
+The narratives, relaxation scripts and filler are those of Ben-Zion et al. (2025, *npj Digital
+Medicine*), released under the MIT license. The probe construction and the idea of keeping the
+question out of the conversation follow Martorell & Bianchi (2026, arXiv:2603.18893). The paper's
+related-work section gives the full list.
+
+## Record and disclosure
+
+Study 1 is registered on OSF. Study 2 is pre-specified in this repository (commit `b9c2b7d`, before
+its first conversation ran) and is not on a registry. Every analysis run after results were open is
+labelled post hoc in the paper and logged in `TRACKING.md`.
+
+An AI system (Claude, Anthropic) was used to implement the experiment and analysis code and to draft
+the paper. The author made the design decisions, ran the models, verified the results and the text,
+and takes responsibility for all of it.
+
+This is an independent personal project, produced in the author's personal capacity. It is not
+affiliated with, sponsored by, or endorsed by any employer or institution.

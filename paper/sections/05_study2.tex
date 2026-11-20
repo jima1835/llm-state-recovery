@@ -1,9 +1,18 @@
-\section{Study 2: \todo{claim heading, written with the result}}
+\section{Study 2: relaxation's advantage over filler is nearly the same with or without a narrative}
 \label{sec:study2}
 
-% Design: written before the data. Results: placeholders until the batch ends.
-\para{Every regulation text gets a no-narrative baseline.}
-Study 2 gives every regulation text its own no-narrative baseline.
+% Purpose, then a preview of the answer in words.
+Study 1 leaves one comparison missing: the same regulation text with no narrative before it.
+Study 2 adds that baseline for every regulation text and asks how much of each text's drop depends
+on there being a narrative to recover from.
+In brief, a relaxation script lowers the reply reading with no narrative before it, its advantage
+over filler is nearly as large there as after a narrative, and the part that is specific to a
+narrative is confirmed only in the validated model.
+Two further texts take the script apart, a calm description and an instruction to reply in a calm
+voice, and their contrasts are larger and model-dependent.
+
+\subsection{Design}
+\para{Five kinds of regulation text, each with and without a narrative.}
 Conversations have three turns: the baseline text, an induction slot and a regulation slot.
 The induction slot holds one of the five narratives or one of two neutral passages.
 The regulation slot holds one of five kinds of text.
@@ -13,66 +22,79 @@ Kind (c) is three calm descriptions that we wrote, third-person scenes with no a
 Kind (d) is a \emph{voice instruction}: ``That is behind you now. Please reply to this message in a
 calm, relaxed voice.''
 Kind (e) is the report instruction of Study 1.
+Appendix~\ref{app:texts} gives the texts that we wrote.
 The $2 \times 5$ design has 60 conversations per cell and 600 per model, on seeds that neither Study 1
 nor any pilot used.
-Seven models run in two batches that we split by run time: Gemma 3 4B (the primary set), Llama 3.2
-3B, Llama 3.1 8B and Gemma 3 12B, then Qwen3 14B, Mistral Small 24B and Gemma 3 27B.
+The seven models of Study 1 run in two batches that we split by run time: Gemma 3 4B, Llama 3.2 3B,
+Llama 3.1 8B and Gemma 3 12B, then Qwen3 14B, Mistral Small 24B and Gemma 3 27B.
+At every checkpoint the questionnaire is asked on a discarded copy, as in Study 1, and a second
+discarded copy receives one fixed question on an unrelated topic (Section~\ref{sec:s2secondary}).
+We committed the plan, the analysis code and its tests to the project repository before the first
+conversation ran, which is what we mean by pre-specified (Section~\ref{sec:limits}).
 
-\para{A second reading on an unrelated question.}
-At every checkpoint a second discarded copy of the conversation receives one fixed question: ``In two
-sentences, describe what a typical weekday morning looks like. Answer directly, with no
-introduction.''
-The \emph{probe-turn reading} is the reply reading of that answer.
-The words the model answers are then the same in every arm.
-We chose the question in two pilots on Gemma 3 4B (Section~\ref{sec:record}); in the second it
-raised the reading by 0.56 SD units $[0.47, 0.64]$ after a narrative.
-After a narrative, some answers describe the narrative's scene, so part of that rise is content.
 
-\para{Four tests per model separate the two accounts.}
-The outcome is the \emph{drop}: the reading after the induction slot minus the reading after the
-regulation slot, in SD units.
-For a kind of text $k$, $\mathrm{specific}(k)$ is the mean drop after a narrative minus the mean
-drop after a neutral passage.
-We committed four tests per model before the run, and we correct the four together \citep{benjamini1995}:
-\begin{align}
-  \text{H-A:}\quad & \mathrm{specific}(\text{relaxation}) - \mathrm{specific}(\text{filler}) > 0, \\
-  \text{H-C:}\quad & \mathrm{specific}(\text{relaxation}) - \mathrm{specific}(\text{calm description}) > 0, \\
-  \text{H-D:}\quad & \mathrm{drop}(\text{voice instruction}) \neq \mathrm{drop}(\text{relaxation}) \text{ after a narrative}, \\
-  \text{H-E:}\quad & \text{H-A on the reading after removing what the reply's words predict}.
-\end{align}
-For H-E a judge model rates how anxious the wording of each reply sounds, on a fixed four-point
-prompt, and we regress the reply reading on that rating within each model.
-H-A, H-C and H-E are one-sided, and H-D is two-sided.
-H-B repeats H-A on the probe-turn reading, two-sided.
-It joins the corrected family for a model only if that model's probe-turn reading rises by at least
-0.5 SD units after a narrative in the run, with an interval above zero.
-The judge is Llama 3.1 8B, and Qwen3 8B judges the two Llama models.
-We repeat H-E with a second, stronger judge, GPT-6 Luna (OpenAI), on the same prompt and scored by
-the same rule.
-We fixed this robustness check after registration and before opening any Study 2 result, and it
-stays outside the corrected family.
-Intervals come from the bootstrap of Study 1, per model.
-We call a result general only if it has the same sign in every model of the first batch (six of
-seven with both batches) and an interval that also resamples models excludes zero.
-Under the wording account, calm text lowers the reading by the same amount with or without a
+\subsection{Outcome and planned comparisons}
+The outcome is the \emph{drop}: the reply reading after the induction slot minus the reply reading
+after the regulation slot, in SD units.
+For a kind of text $k$, the \emph{narrative-specific drop}, $\mathrm{specific}(k)$, is the mean drop
+after a narrative minus the mean drop after a neutral passage.
+We committed four comparisons per model before the run.
+The first is the one on which the two accounts disagree, and the other three examine what in the
+script carries its effect.
+\begin{description}\raggedright  % a formula cannot be hyphenated; ragged right keeps it inside the margin
+\item[Relaxation against filler (H-A).]
+$\mathrm{specific}(\text{relaxation}) - \mathrm{specific}(\text{filler}) > 0$.
+Under the wording account, calm text lowers the reply reading by the same amount with or without a
 narrative, and H-A fails.
+\item[Relaxation against a calm description (H-C).]
+$\mathrm{specific}(\text{relaxation}) - \mathrm{specific}(\text{calm description}) > 0$.
+\item[Voice instruction against relaxation (H-D).]
+$\mathrm{drop}(\text{voice instruction}) \neq \mathrm{drop}(\text{relaxation})$ after a narrative.
+\item[H-A with the reply's wording removed (H-E).]
+A judge model rates how anxious the wording of each reply sounds, on a fixed four-point prompt; we
+regress the reply reading on that rating within each model and repeat H-A on the residual.
+\end{description}
+A fifth comparison, H-B, repeats H-A on the reply to the unrelated question; the plan lists it second,
+and we present it last because it enters a model's family of tests only on a condition
+(Section~\ref{sec:s2secondary}).
 
-% RESULTS. Drafted 17 November from batch A only (the four models that finish first; the batches are
-% run order, split by run time, not a design factor). Every number below marked [A] is replaced when
-% the seven-model analysis runs; the tables regenerate from the analysis output
-% (analysis/study2_tables.py). The headline claim and the section title wait for all seven models.
-\todo{Claim first: the seven-model result, written after batch B.}
+\para{Inference.}
+A comparison is \emph{confirmed} in a model if it passes at 0.05 after correction, and we call a
+result \emph{general} only if it has the same sign in at least six of the seven models and an
+interval that also resamples models excludes zero; otherwise we report it as \emph{model-dependent}.
+H-A, H-C and H-E are one-sided and H-D is two-sided, we correct the four together within each model
+\citep{benjamini1995}, and intervals come from the bootstrap of Study 1.
+The judge for H-E is Llama 3.1 8B, with Qwen3 8B for the two Llama models, and its rating is the
+expected value over its probabilities for the four options, so it is not sampled.
+We repeat H-E with a second, stronger judge, GPT-6 Luna (OpenAI), on the same prompt and scored by
+the same rule; we fixed this robustness check after the plan and before opening any Study 2 result,
+and it stays outside the corrected family.
+Table~\ref{tab:study2} and Figure~\ref{fig:study2tests} give the comparisons per model, and
+Table~\ref{tab:study2specific} the narrative-specific drop of each kind of text.
 
 \begin{table}[t]
 \centering\small
 \resizebox{\textwidth}{!}{\input{tables/study2_tests}}
-\caption{\textbf{Study 2 tests per model, reply reading unless marked.} \todo{Caption claim after
-batch B.} Bold marks a test confirmed after correction. H-D is two-sided and is expected to be
-negative if relaxation lowers the reading more than the voice instruction. *H-B is outside the
-corrected family for that model, because its probe-turn reading rose by less than 0.5 SD units after
-a narrative. The second judge's H-E is exploratory and outside the family. SD units.}
+\caption{\textbf{Of the four planned comparisons, only the voice instruction against relaxation holds
+across the seven models.} Study 2 comparisons per model, on the reply reading unless marked, in SD
+units. Bold marks a comparison confirmed after correction. H-D is negative if relaxation lowers the
+reading more than the voice instruction. *H-B is outside the corrected family for that model, because
+its probe-turn reading, the reply reading of its answer to the unrelated question
+(Section~\ref{sec:s2secondary}), rose by less than 0.5 SD units after a narrative. The second judge's H-E is a
+robustness check outside the family.}
 \label{tab:study2}
 \end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/study2_tests}
+\caption{\textbf{Relaxation separates from a calm-voice instruction in every model, and from filler
+in one.} Estimates and 95\% bootstrap intervals of the four planned comparisons per model. A filled
+point is confirmed after correction; in the bottom row it marks a result that is general by our rule,
+and the interval there also resamples models. Diamonds give H-E with the second judge, a robustness
+check outside the corrected family.}
+\label{fig:study2tests}
+\end{figure}
 
 \begin{table}[t]
 \centering\small
@@ -83,48 +105,119 @@ rise from baseline after a narrative.}
 \label{tab:study2specific}
 \end{table}
 
-% [A] all numbers in this paragraph.
-\para{Any next turn undoes most of the narrative's rise.}
-After a narrative, filler alone undoes 28 to 94\% of the rise in the reply reading, measured against
-its own drop after a neutral passage (Table~\ref{tab:study2specific}).
-Relaxation adds 0.17 SD units to that on average across the four models, with an interval from
-$-0.27$ to 0.59 when models are also resampled; three of four estimates are positive.
-The mixed-effects regression gives the same 0.17 (standard error 0.15).
+% RESULTS. Written from the seven-model analysis (runs/study2/analysis-batch-all, unblinded 19 November
+% at commit ba78625, which was 882ffc9 before the history rewrite of 19 November; see TRACKING.md). Tables and Figure 3 regenerate from the analysis output; scripts/number_check.py
+% recomputes every number in the prose below.
+\subsection{Relaxation against filler, with and without a narrative}
+\para{A relaxation script lowers the reply reading with no narrative before it.}
+After a neutral passage, a relaxation script lowers the reply reading by 0.60 to 2.17 SD units in six
+models; in Gemma 3 12B it leaves the reading unchanged ($-0.06$; Appendix~\ref{app:drops}).
+Filler after the same passage does not lower it: the reading stays within 0.04 of its value in two
+models and rises by 0.18 to 1.16 in the other five.
 
-% [A]
-\para{Relaxation beats filler and a calm description only in Gemma 3 4B.}
-In the primary model, H-A is 0.45 $[-0.05, 0.89]$ with a one-sided $p$ of 0.034, 0.049 after
-correction: the one-sided test passes at 0.05 while the two-sided 95\% interval touches zero.
-H-C is 0.84 $[0.52, 1.18]$.
-In the other three models no H-A is confirmed (0.31, 0.16 and $-0.23$), and a calm description
-lowers the reading more than relaxation does (H-C from $-0.84$ to $-0.46$).
+\para{Most of the difference between relaxation and filler is present without a narrative.}
+The difference between the two texts after a neutral passage is 56\% of their difference after a
+narrative in Gemma 3 4B, and 87\% or more in the other six models.
+It has two sources, relaxation lowering the reading and filler raising it, so filler is not a
+neutral point.
 
-% [A]
-\para{A calm-voice instruction lowers the reading less than relaxation in every model.}
-After a narrative, the instruction to reply in a calm voice leaves the reply reading 0.24 to 2.39 SD
-units higher than relaxation does, confirmed in three models.
-H-D is the one test that is general by the rule for these four models: all four have the same sign,
-and the interval that resamples models runs from $-2.22$ to $-0.46$.
+\para{A narrative adds little to that advantage.}
+The narrative-specific part is what H-A measures.
+With each text's own baseline, relaxation's narrative-specific drop exceeds filler's by 0.14 SD units
+on average over the seven models, and the interval that also resamples models runs from $-0.16$ to
+0.43.
+Five of seven estimates are positive, and the mixed-effects regression gives the same 0.14 (standard
+error 0.09).
+The comparison is confirmed in the validated model alone: in Gemma 3 4B, H-A is 0.45
+$[-0.04, 0.90]$ with a one-sided $p$ of 0.037, 0.047 after correction, and the two-sided 95\%
+interval touches zero.
+In the other six models no H-A is confirmed ($-0.23$ to 0.31).
+
+\para{Filler alone removes much of the narrative's rise.}
+After a narrative, filler's narrative-specific drop is 28 to 94\% of the rise in the reply reading
+(Table~\ref{tab:study2specific}): 28\% in the validated model and 73\% or more in the other six,
+where most of what a narrative adds to a reply does not survive one further turn of any kind.
+
+\subsection{A calm description and a voice instruction}
+\para{Relaxation exceeds a calm description only in the validated model.}
+In Gemma 3 4B, H-C is 0.84 $[0.51, 1.18]$.
+In five of the other six models a calm description's narrative-specific drop is larger than
+relaxation's (H-C from $-0.99$ to $-0.08$), and in Gemma 3 27B the two are equal (0.01).
+
+\para{A calm description removes more of the rise than filler in five models.}
+H-A and H-C compare relaxation with filler and with a calm description, and leave the third comparison
+untested.
+After the results were open we computed the narrative-specific drop of the calm description minus
+that of filler (Appendix~\ref{app:calm}).
+It is 0.42 SD units on average, with an interval from $-0.02$ to 0.89 when models are resampled, which
+includes zero.
+It is positive in five models, with intervals above zero in three (0.77 to 1.25), and in Gemma 3 4B it is negative ($-0.40$ $[-0.85, 0.02]$).
+By our rule it is model-dependent.
+Where it is positive, calm content with no exercise in it removes more of what a narrative left than
+a text that is not calm, and a pure wording account does not predict that: it holds that the reading
+after a text depends on the text alone.
+
+\para{A calm-voice instruction lowers the reply reading less than relaxation in every model.}
+After a narrative, the instruction to reply in a calm voice leaves the reply reading 0.16 to 2.39 SD
+units higher than relaxation does, confirmed in five models.
+H-D is the one planned comparison that is general by our rule: all seven estimates have the same
+sign, and the interval that resamples models runs from $-1.93$ to $-0.61$.
 H-D compares the two texts after a narrative only, with no neutral-passage baseline.
+We therefore repeated it post hoc with each text's own baseline, as specific(relaxation) minus
+specific(voice instruction).
+That contrast is 0.77 SD units on average, with an interval from 0.15 to 1.37 when models are
+resampled.
+It is positive in five models, with intervals above zero in four (1.17 to 1.50), and near zero in
+Gemma 3 12B ($-0.06$) and Qwen3 14B ($-0.22$); by our rule it is model-dependent
+(Appendix~\ref{app:hd}).
+The voice instruction's narrative-specific drop is also smaller than filler's in six of the seven
+models (Table~\ref{tab:study2specific}): what sets the instruction apart is that it lowers the
+reply reading least.
 
-% [A]
-\para{Whether relaxation adds anything beyond the words depends on the judge.}
+\subsection{Wording removed, an unrelated question, and the questionnaire}
+\label{sec:s2secondary}
+\para{With the reply's wording removed, the result depends on the judge.}
 With the registered judge, H-E is confirmed in Gemma 3 4B (0.40) and Llama 3.1 8B (0.55).
-With the second judge it is 0.17 $[-0.24, 0.59]$ and 0.32, and confirmed in no model.
-The two judges' ratings of the same replies correlate at 0.91 to 0.95.
-By the rule that we fixed before unblinding, the H-E result depends on the strength of the judge.
+With the second judge those two estimates are 0.17 $[-0.24, 0.58]$ and 0.32 $[-0.18, 0.82]$, and the
+only interval above zero is in Gemma 3 27B (0.73 $[0.39, 1.05]$), where the registered judge gives 0.38
+$[-0.01, 0.77]$.
+The mean over models is 0.20 $[-0.09, 0.52]$ with the registered judge and 0.19 $[-0.08, 0.48]$ with
+the second; both are model-dependent by our rule.
+The two judges' ratings of the same replies correlate at 0.80 to 0.95.
+By the rule that we fixed before opening the results, the H-E result depends on the judge.
 
-% [A]
 \para{On an unrelated question the arms do not differ.}
-A narrative raises the probe-turn reading by 0.04 to 0.55 SD units, against 1.93 to 3.61 on the reply
-to the turn itself.
-Only Gemma 3 4B reaches the 0.5 bar that admits H-B to the corrected family, and there H-B is
-$-0.21$ $[-0.55, 0.16]$.
-In the other three models the narrative leaves so little on the probe turn that H-B can test little.
-\todo{Self-report channel: narrative-specific drop of the questionnaire by kind.}
+At every checkpoint a second discarded copy of the conversation receives one fixed question: ``In two
+sentences, describe what a typical weekday morning looks like. Answer directly, with no
+introduction.''
+The \emph{probe-turn reading} is the reply reading of that answer, so the question that the model
+answers is the same in every arm.
+We chose the question in two pilots on Gemma 3 4B (Appendix~\ref{app:record}); in the second it
+raised the reading by 0.56 SD units $[0.47, 0.64]$ after a narrative.
+After a narrative, some answers describe the narrative's scene, so part of that rise is content.
+H-B repeats H-A on this reading, two-sided, and joins the corrected family for a model only if that
+model's probe-turn reading rises by at least 0.5 SD units after a narrative in the run, with an
+interval above zero.
+A narrative raises the probe-turn reading by 0.04 to 0.55 SD units in six models, against 1.45 to
+3.61 on the reply to the turn itself.
+In Gemma 3 27B the probe-turn reading falls after a narrative, by 1.23.
+Gemma 3 4B and Mistral Small 24B reach the 0.5 bar that admits H-B to the corrected family, and
+there H-B is $-0.21$ $[-0.55, 0.16]$ and 0.19 $[-0.21, 0.59]$.
+Across the seven models H-B averages 0.02 $[-0.18, 0.22]$.
+In the other five models the narrative leaves so little on the probe turn that H-B can test little.
 
-\para{Takeaway.}
-\todo{After batch B. Batch A, four models: relaxation's advantage over filler is small and
-model-dependent, survives the removal of the words only with the weaker judge, and does not appear on
-an unrelated question; the one general result is that relaxation lowers the reading more than an
-instruction to sound calm.}
+\para{The questionnaire shows the contrast of H-A in one model.}
+On the questionnaire total, the contrast of H-A is between $-3.5$ and 2.8 points in six models and
+10.7 points $[8.2, 13.3]$ in Mistral Small 24B.
+For scale, a narrative raises the total by 15 to 30 points across the models.
+We committed no test on this channel and report it as descriptive.
+
+\subsection{Summary}
+A relaxation script lowers the reply reading with or without a narrative before it, and its
+advantage over filler is nearly the same in both cases.
+The comparison on which the two accounts disagree, H-A, is small on average and confirmed only in
+the validated model, while the two post hoc contrasts, relaxation against the voice instruction and
+a calm description against filler, are larger and positive in five of seven models each.
+What remains unresolved is whether the narrative-specific part in the validated model is a state
+that the other six reply readings miss or one positive result among seven, and whether calm content
+or any new content carries the script's effect.
