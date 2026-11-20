@@ -310,3 +310,36 @@ Not covered: PsyArXiv and OSF preprints. Repeat the check before submitting.
 - **Nov 19, 19:36 — commit hashes and the OSF upload detail removed from the paper (Jiajun).** Appendix A now says that Study 1's second-stage update and all of Study 2 were committed to the repository before their runs began, without the hashes; this log keeps them (`ba39865`, Nov 13; `b9c2b7d`, Nov 15) and the record that the second-stage text was uploaded to the OSF project after the run had started. The registration of Study 1's design and hypotheses on OSF is unchanged in the paper.
 - **Nov 19, about 20:10 — submitted to arXiv (Jiajun), tracking number submit/8385037.** Licence CC BY 4.0; arXiv compiled the source with pdfLaTeX on TeX Live 2025 without errors (26 pages); the compiled PDF was read page by page before submission. arXiv's classifier suggested cs.CL as primary; the preview was stamped cs.LG.
 - **Nov 19, about 20:13 — public release prepared; history rewrite tested on a scratch clone.** `git filter-repo` with the three paths of the 19:14 entry removed and the one phrase replaced gives exactly the predicted hashes (`588d522` → `8b31f18`, `882ffc9` → `ba78625`), leaves every earlier commit unchanged, and leaves the tip's contents identical apart from the two removed files. Added for the release: an MIT `LICENSE` for the code, a README section on licences, and the note at the top of this file on what "review" means here. The export's checks were rerun at 20:15 against the tree with these additions (118 files) and all pass, including `scripts/check_all.sh` in a clean tree with only the record unpacked; `release.tar.gz` still has the MD5 of the 19:14 entry.
+- **Nov 19, about 21:25 — repository made public (Jiajun).** `github.com/jima1835/llm-state-recovery`, one branch, `main`, with the history rewritten as tested in the 20:13 entry. arXiv showed the submission as on hold that evening.
+- **Nov 19, about 21:45 — second rewrite of the public history, before the paper was announced (Jiajun).** Removed from every commit: the automated reviewers' reports (`papers/design-review/`; the reviews stay logged above, in the entries of Nov 15, 18 and 19), a practice folder written for the author's own learning and used by nothing in the study (`probes/`), and one personal reference in a to-do item above. No code, configuration, registration text, analysis, result or other log entry was changed. The repository was published again from the rewritten history. Every commit keeps its date, author and message, and every commit hash changed (table below).
+
+## Commit hashes in this log and in the public repository
+
+Hashes cited in this log, in `registration/stage2_osf.md`, in `registration/study2_plan.md` and in `scripts/unblind_study2.sh` are those of the working repository at the time of writing. The public history was rewritten twice on Nov 19 to remove files and phrases that are not part of the study (the 19:14 and 20:13 entries, and the entry above). A rewrite changes hashes and leaves dates, messages and the study's files as they were. The registered documents are left as filed. For the 24 commits made before the release, the table gives each commit's hash as cited and its hash in the public repository. `8b31f18` and `ba78625`, named in the 20:13 entry, were the hashes of `588d522` and `882ffc9` after the first rewrite. The author keeps the original commits.
+
+| Date | Cited as | Public repository | Commit |
+| --- | --- | --- | --- |
+| Nov 11 | `16993a2` | `e138853` | Project setup: environment, passing smoke test, probe skeleton, prompt sources |
+| Nov 12 | `c4c8a42` | `1ae041f` | Smoke test takes a model id; record prompt-source contents and STAI copyright |
+| Nov 12 | `4cf7261` | `171d64f` | Runner: float32 activations, relaxation arm, transcript viewer |
+| Nov 12 | `962120b` | `50dd31a` | v2.0 protocol, questionnaire speed-up (diagnosed: rounding only), checks, scripts, tracking |
+| Nov 12 | `efea227` | `5864ac0` | Self-report analysis, Gate 0 validation toolkit, v2.0 results in tracking |
+| Nov 12 | `688961a` | `54e26f4` | Stage 1 registration draft, two-wave plan, Gate 0 review notes |
+| Nov 12 | `6c0994e` | `2c963ed` | Lock Gate 0 thresholds before reading any Gate 0 report; record H2 and return-test decisions |
+| Nov 12 | `afa7e7e` | `066987d` | Gemma 4 compatibility for mlx-lens, H2 wording pilot, overnight queue, Gate 0 pilot results |
+| Nov 12 | `24502f4` | `8498de5` | Overnight queue: add Gemma 4, Llama 3.2 3B, Mistral 7B; optional extras |
+| Nov 13 | `ba39865` | `5dd30dd` | Stage 2 update, confirmatory config, weekend queue |
+| Nov 15 | `52faec8` | `cb9e5c0` | Confirmatory analysis and mixed-effects regression, written and tested before unblinding; data collection finished |
+| Nov 15 | `b9c2b7d` | `3f75aa8` | Study 2: plan, config, probe-turn fork, pilots, analysis and judge code written before the run |
+| Nov 15 | `c7eac49` | `a796be0` | Paper draft and run notes during Study 2 data collection |
+| Nov 16 | `701f7ce` | `9250267` | Study 2: exploratory second judge (gpt-6-luna), fixed before unblinding |
+| Nov 16 | `f4da70c` | `659cd06` | Study 1 post hoc wording check (rules fixed before running); paper wording edits; judge status |
+| Nov 17 | `0affd1f` | `0237599` | Study 1 wording check results; trial-style safeguards in intro |
+| Nov 17 | `8afa733` | `58f90aa` | Study 2 batch A unblinded at 0affd1f; results logged |
+| Nov 17 | `36c038e` | `c2bcab8` | Study 2 results drafted from batch A; tables generated from the analysis output |
+| Nov 18 | `e8a9144` | `41ba5da` | backup before reboot |
+| Nov 19 | `588d522` | `e37e911` | Related work and AI-use disclosure drafted; Study 1 model-resampled intervals (post hoc); claims review; LEDGER split |
+| Nov 19 | `882ffc9` | `538a1f5` | References checked, two added; two figures; citation check; batch B run and both judges complete (unopened) |
+| Nov 19 | `bdef983` | `ccf7a41` | Study 2 results, restructure after editorial review, post hoc contrasts, independent checks, README |
+| Nov 19 | `e267cbb` | `b784c5e` | Remove commit hashes and OSF upload detail from the paper and README |
+| Nov 19 | `df52148` | `13c3cd7` | Add MIT licence, licence notes, note on automated reviews; log arXiv submission |

@@ -7,7 +7,6 @@ Induction** (Jiajun Ma, November 2026).
 
 - Paper: arXiv (link added when the paper is announced)
 - Data: https://doi.org/10.5281/zenodo.24384809
-- Study 1 registration: https://osf.io/vyhrg/
 
 ## What the paper finds
 
